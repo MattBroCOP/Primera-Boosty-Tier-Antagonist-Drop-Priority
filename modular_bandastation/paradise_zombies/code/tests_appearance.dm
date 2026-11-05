@@ -6,7 +6,7 @@
 	abstract_type = /datum/unit_test/paradise_zombie_appearance_test
 
 /** Counts actual world overlays, rather than trusting a component's bookkeeping alone. */
-/datum/unit_test/paradise_zombie_appearance_test/proc/count_body_overlays(mob/living/carbon/human/host, icon_file)
+/datum/unit_test/paradise_zombie_appearance_test/proc/count_body_overlays(atom/host, icon_file)
 	var/count = 0
 	for(var/mutable_appearance/overlay as anything in host.overlays)
 		if(overlay.icon == icon_file)
@@ -205,5 +205,26 @@
 	var/list/backpack_overlays = ordinary.overlays_standing[BACK_LAYER]
 	var/mutable_appearance/backpack_overlay = backpack_overlays[1]
 	TEST_ASSERT(backpack_overlay.appearance in ordinary.overlays, "Rebuilding the Z planes removed the ordinary zombie's visible backpack.")
+
+/** A mirror must only see the live Slasher body when native anatomy is refreshed. */
+/datum/unit_test/paradise_zombie_mutation_reflection
+	parent_type = /datum/unit_test/paradise_zombie_appearance_test
+
+/datum/unit_test/paradise_zombie_mutation_reflection/Run()
+	var/obj/structure/mirror/mirror = allocate(/obj/structure/mirror, run_loc_floor_bottom_left)
+	var/mob/living/carbon/human/host = make_mutant("slasher")
+	var/atom/movable/reflection_holder = mirror.vis_contents[1]
+	TEST_ASSERT_NOTNULL(reflection_holder, "The mirror fixture has no reflection holder.")
+	TEST_ASSERT(length(reflection_holder.vis_contents), "The mirror fixture has no reflection of the Slasher.")
+	var/atom/movable/reflection = reflection_holder.vis_contents[1]
+	var/list/native_body = host.overlays_standing[BODYPARTS_LAYER]
+	TEST_ASSERT(length(native_body), "The Slasher fixture has no native anatomy cache.")
+
+	host.apply_overlay(BODYPARTS_LAYER)
+	var/datum/component/paradise_zombie_mutation_body/mutation = host.GetComponent(/datum/component/paradise_zombie_mutation_body)
+	TEST_ASSERT_EQUAL(count_body_overlays(reflection, mutation.body_icon), length(mutation.body_appearances), "The mirror failed to show the Slasher's body.")
+	for(var/mutable_appearance/bodypart as anything in native_body)
+		TEST_ASSERT(!(bodypart.appearance in host.overlays), "Refreshing the Slasher revealed its native anatomy on the mob.")
+		TEST_ASSERT(!(bodypart.appearance in reflection.overlays), "Refreshing the Slasher revealed its native anatomy in the mirror.")
 
 #endif

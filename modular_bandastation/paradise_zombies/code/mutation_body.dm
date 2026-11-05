@@ -34,7 +34,7 @@
 	old_base_pixel_y = host.base_pixel_y
 
 /datum/component/paradise_zombie_mutation_body/RegisterWithParent()
-	RegisterSignal(parent, COMSIG_CARBON_APPLY_OVERLAY, PROC_REF(on_overlay_applied))
+	RegisterSignal(parent, COMSIG_CARBON_PRE_APPLY_OVERLAY, PROC_REF(on_pre_apply_overlay))
 	RegisterSignals(parent, list(COMSIG_CARBON_POST_ATTACH_LIMB, COMSIG_CARBON_POST_REMOVE_LIMB), PROC_REF(on_anatomy_changed))
 	appearance_applied = TRUE
 	var/mob/living/carbon/human/host = parent
@@ -46,7 +46,7 @@
 	redraw_body()
 
 /datum/component/paradise_zombie_mutation_body/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_CARBON_APPLY_OVERLAY, COMSIG_CARBON_POST_ATTACH_LIMB, COMSIG_CARBON_POST_REMOVE_LIMB))
+	UnregisterSignal(parent, list(COMSIG_CARBON_PRE_APPLY_OVERLAY, COMSIG_CARBON_POST_ATTACH_LIMB, COMSIG_CARBON_POST_REMOVE_LIMB))
 	if(!appearance_applied)
 		return
 	appearance_applied = FALSE
@@ -89,13 +89,13 @@
 	host.pixel_y = 0
 	host.base_pixel_y = 0
 
-/datum/component/paradise_zombie_mutation_body/proc/on_overlay_applied(mob/living/carbon/human/source, cache_index, list/applied_overlays)
+/datum/component/paradise_zombie_mutation_body/proc/on_pre_apply_overlay(mob/living/carbon/human/source, cache_index)
 	SIGNAL_HANDLER
 	if(!(cache_index in hidden_layers))
 		return
-	source.cut_overlay(applied_overlays)
 	if(cache_index == BODYPARTS_LAYER)
 		redraw_body()
+	return COMPONENT_BLOCK_CARBON_OVERLAY
 
 /datum/component/paradise_zombie_mutation_body/proc/on_anatomy_changed()
 	SIGNAL_HANDLER

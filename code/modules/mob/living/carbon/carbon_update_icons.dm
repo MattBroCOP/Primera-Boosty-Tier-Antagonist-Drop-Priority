@@ -37,7 +37,11 @@
 	var/list/overlays_standing[TOTAL_LAYERS]
 
 /mob/living/carbon/proc/apply_overlay(cache_index)
-	if((. = overlays_standing[cache_index]))
+	if(SEND_SIGNAL(src, COMSIG_CARBON_PRE_APPLY_OVERLAY, cache_index) & COMPONENT_BLOCK_CARBON_OVERLAY)
+		var/hidden_overlay = overlays_standing[cache_index]
+		if(hidden_overlay)
+			cut_overlay(hidden_overlay)
+	else if((. = overlays_standing[cache_index]))
 		add_overlay(.)
 	SEND_SIGNAL(src, COMSIG_CARBON_APPLY_OVERLAY, cache_index, .)
 

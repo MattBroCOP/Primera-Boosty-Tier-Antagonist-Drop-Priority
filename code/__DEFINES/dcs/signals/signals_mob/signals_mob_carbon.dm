@@ -124,7 +124,11 @@
 	#define BLOCK_EAT_ATTEMPT (1 << 0)
 ///Called when a carbon vomits : (distance, force)
 #define COMSIG_CARBON_VOMITED "carbon_vomited"
-///Called from apply_overlay(cache_index, overlay)
+/// Called before a carbon applies a cached overlay: (cache_index)
+#define COMSIG_CARBON_PRE_APPLY_OVERLAY "carbon_pre_apply_overlay"
+	/// Keeps the overlay in the cache without drawing it.
+	#define COMPONENT_BLOCK_CARBON_OVERLAY (1 << 0)
+/// Called after the appearance is updated from a cached layer: (cache_index, applied_overlay)
 #define COMSIG_CARBON_APPLY_OVERLAY "carbon_apply_overlay"
 ///Called from remove_overlay(cache_index, overlay)
 #define COMSIG_CARBON_REMOVE_OVERLAY "carbon_remove_overlay"
