@@ -23,7 +23,7 @@
 	var/mob/living/carbon/human/zombie = parent
 	if(!istype(zombie))
 		return PROCESS_KILL
-	if(HAS_TRAIT(zombie, TRAIT_SUICIDED))
+	if(HAS_TRAIT(zombie, TRAIT_SUICIDED) || HAS_TRAIT(zombie, TRAIT_STASIS))
 		return
 	var/turf/current_turf = get_turf(zombie)
 	if(!current_turf)
@@ -116,15 +116,17 @@
 /** Uses the normal item attack path for adjacent prey, otherwise walks toward a visible human. */
 /datum/component/paradise_zombie_regen/proc/mindless_hunger()
 	var/mob/living/carbon/human/zombie = parent
-	var/list/targets = list()
-	for(var/mob/living/carbon/human/target in view(6, zombie))
-		if(target.stat == STABLE && !HAS_TRAIT(target, TRAIT_PARADISE_ZOMBIE))
-			targets |= target
-			if(zombie.Adjacent(target))
-				break
+	var/list/distant_targets
 	var/mob/living/carbon/human/target
-	if(length(targets))
-		target = pick(targets)
+	for(var/mob/living/carbon/human/candidate in view(6, zombie))
+		if(candidate.stat != STABLE || HAS_TRAIT(candidate, TRAIT_PARADISE_ZOMBIE))
+			continue
+		if(zombie.Adjacent(candidate))
+			target = candidate
+			break
+		LAZYADD(distant_targets, candidate)
+	if(!target && length(distant_targets))
+		target = pick(distant_targets)
 	if(target && zombie.Adjacent(target) && safe_active_hand(zombie))
 		if(!zombie.get_active_held_item() && !zombie.get_inactive_held_item() && zombie.usable_hands >= 2 && !HAS_TRAIT(zombie, TRAIT_NO_TWOHANDING))
 			var/obj/item/paradise_zombie_claw/claw = new()

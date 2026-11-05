@@ -101,6 +101,7 @@
 		wizard.create_wiz_team()
 	victim_mind.add_antag_datum(servant, wizard?.wiz_team)
 	regeneration.zombie_rejuv()
+	infection.ritual_health_bonus = 200 - victim.maxHealth
 	victim.setMaxHealth(200)
 	victim.updatehealth()
 	REMOVE_TRAIT(victim, PARADISE_PLAGUE_RITUAL_TRAIT, REF(src))

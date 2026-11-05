@@ -8,8 +8,6 @@
 	hud_icon = 'modular_bandastation/paradise_zombies/icons/antaghud.dmi'
 	show_to_ghosts = TRUE
 	stinger_sound = 'modular_bandastation/paradise_zombies/sound/zomboidalert.ogg'
-	/// An optional infection carried by the wizard's plague claws.
-	var/chosen_disease
 	/// Granted actions are owned by this antagonist, including across mind transfers.
 	var/list/zombie_actions = list()
 	/// The language selection to restore when this body's infection is removed.
@@ -63,10 +61,11 @@
 	for(var/obj/item/held_item in zombie.get_held_items())
 		if(!(held_item.item_flags & ABSTRACT))
 			zombie.dropItemToGround(held_item)
+	var/datum/disease/paradise_zombie/infection = locate() in zombie.diseases
 	var/datum/action/cooldown/paradise_zombie_claws/claws
 	if(HAS_TRAIT(zombie, TRAIT_PARADISE_PLAGUE_ZOMBIE))
 		claws = new /datum/action/cooldown/paradise_zombie_claws/plague
-		claws.disease = chosen_disease
+		claws.disease = infection?.plague_disease
 		var/datum/action/cooldown/paradise_zombie_leap/leap = new
 		leap.Grant(zombie)
 		zombie_actions += leap
@@ -75,7 +74,6 @@
 		shadow_demon_extinguish(zombie)
 	claws.Grant(zombie)
 	zombie_actions += claws
-	var/datum/disease/paradise_zombie/infection = locate() in zombie.diseases
 	if(!infection)
 		infection = new
 		infection.stage = 7
@@ -95,8 +93,8 @@
 	MODIFY_PHYSIOLOGY(zombie, STAMINA, 2)
 	UnregisterSignal(zombie, list(COMSIG_LIVING_TRY_PUT_IN_HAND, COMSIG_LIVING_SET_BODY_POSITION))
 	zombie.remove_movespeed_modifier(/datum/movespeed_modifier/paradise_zombie)
-	var/datum/component/paradise_zombie_combat/combat = zombie.GetComponent(/datum/component/paradise_zombie_combat)
-	QDEL_NULL(combat)
+	if(!HAS_TRAIT(zombie, TRAIT_PARADISE_ZOMBIE))
+		qdel(zombie.GetComponent(/datum/component/paradise_zombie_combat))
 	var/datum/language_holder/languages = zombie.get_language_holder()
 	languages.remove_blocked_language(GLOB.all_languages, ALL, REF(src))
 	languages.remove_language(/datum/language/paradise_zombie, ALL, REF(src))
@@ -106,7 +104,10 @@
 /datum/antagonist/paradise_zombie/on_body_transfer(mob/living/old_body, mob/living/new_body)
 	var/datum/disease/paradise_zombie/infection = locate() in new_body.diseases
 	if(!infection)
-		remove_innate_effects(old_body)
+		if(old_body)
+			remove_innate_effects(old_body)
+			if(old_body.stat != DEAD && !LAZYLEN(old_body.mind?.antag_datums))
+				old_body.remove_from_current_living_antags()
 		owner.remove_antag_datum(type)
 		return
 	return ..()

@@ -63,7 +63,11 @@
 	TEST_ASSERT_NULL(controller.form, "A rejected equipment check still applied a form.")
 	TEST_ASSERT_NULL(GLOB.paradise_zombie_mutation_progression.fixed_choices[WEAKREF(host.mind)], "A rejected equipment check permanently spent the mind's choice.")
 	REMOVE_TRAIT(backpack, TRAIT_NODROP, TRAIT_SOURCE_UNIT_TESTS)
+	var/obj/item/clothing/under/color/grey/uniform = allocate(/obj/item/clothing/under/color/grey)
+	uniform.item_flags |= DROPDEL
+	TEST_ASSERT(host.equip_to_slot_if_possible(uniform, ITEM_SLOT_ICLOTHING, disable_warning = TRUE, bypass_equip_delay_self = TRUE), "The zombie could not wear its disposable uniform.")
 	TEST_ASSERT(controller.apply_form("twitcher"), "The real controller rejected removable equipment.")
+	TEST_ASSERT(QDELETED(uniform), "Mutation did not remove the disposable uniform.")
 	TEST_ASSERT_EQUAL(backpack.loc, get_turf(host), "Mutation deleted or retained its backpack instead of dropping it.")
 	TEST_ASSERT_EQUAL(glasses.loc, get_turf(host), "Mutation deleted or retained its glasses instead of dropping them.")
 	TEST_ASSERT(!host.equip_to_slot_if_possible(backpack, ITEM_SLOT_BACK, disable_warning = TRUE, bypass_equip_delay_self = TRUE), "A mutated body could equip ordinary clothing again.")

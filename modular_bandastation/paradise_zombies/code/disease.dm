@@ -36,12 +36,12 @@
 		instant_zombie = TRUE
 
 /datum/disease/paradise_zombie/Copy()
+	update_cure_stage()
 	var/datum/disease/paradise_zombie/copied = ..()
 	copied.cure_stage = cure_stage
 	copied.discovered = discovered
 	copied.plague_disease = plague_disease
 	copied.instant_zombie = instant_zombie
-	copied.update_cure_stage()
 	return copied
 
 /datum/disease/paradise_zombie/after_add()
@@ -202,7 +202,6 @@
 	if(host.mind && !host.mind.has_antag_datum(/datum/antagonist/paradise_zombie))
 		var/datum/antagonist/paradise_zombie/antagonist = new()
 		if(HAS_TRAIT(host, TRAIT_PARADISE_PLAGUE_ZOMBIE))
-			antagonist.chosen_disease = plague_disease
 			antagonist.silent = TRUE
 		host.mind.add_antag_datum(antagonist)
 	if(GLOB.paradise_zombie_mutation_progression.is_mature_zombie(host))
@@ -265,6 +264,16 @@
 	bypasses_immunity = TRUE
 	spread_text = "Не передаётся"
 	cure_text = "Антимагия"
+	/// The ritual's contribution to max health, so cure preserves independent changes.
+	var/ritual_health_bonus = 0
+
+/datum/disease/paradise_zombie/wizard/clear_zombie_effects()
+	var/mob/living/carbon/human/host = affected_mob
+	if(istype(host) && !QDELETED(host) && ritual_health_bonus)
+		host.setMaxHealth(max(1, host.maxHealth - ritual_health_bonus))
+		ritual_health_bonus = 0
+		host.updatehealth()
+	return ..()
 
 /datum/disease/paradise_zombie/wizard/cure(add_resistance = FALSE)
 	return

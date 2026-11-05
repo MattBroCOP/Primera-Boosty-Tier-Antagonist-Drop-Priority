@@ -3,10 +3,9 @@
 	var/datum/disease/paradise_zombie/infection = new
 	infection.infect(patient, FALSE)
 	patient.reagents.add_reagent(/datum/reagent/medicine/paradise_zombie_cure/beta, 2)
-	infection.update_cure_stage()
-	TEST_ASSERT_EQUAL(infection.cure_stage, 2, "Beta must permanently weaken this strain to research level two.")
-	patient.reagents.clear_reagents()
 	var/datum/disease/paradise_zombie/sample = infection.Copy()
+	TEST_ASSERT_EQUAL(infection.cure_stage, 2, "Drawing a blood sample did not register Beta before the next disease cycle.")
+	patient.reagents.clear_reagents()
 	TEST_ASSERT_EQUAL(sample.cure_stage, 2, "A blood sample lost the strain's researched cure level.")
 	qdel(sample)
 	infection.stage = 3
@@ -23,11 +22,18 @@
 	TEST_ASSERT(HAS_TRAIT(patient, TRAIT_PARADISE_ZOMBIE), "Immediate zombification failed to transform the body.")
 	var/obj/item/organ/paradise_zombie_tumor/tumor = patient.get_organ_slot(ORGAN_SLOT_ZOMBIE)
 	TEST_ASSERT_NOTNULL(tumor, "Transformation did not grow the removable necrotic tumor.")
-	tumor.Remove(patient)
+	allocated |= tumor
+	var/mob/living/carbon/human/surgeon = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/hemostat/tool = allocate(/obj/item/hemostat)
+	var/datum/surgery_operation/limb/organ_manipulation/operation = allocate(/datum/surgery_operation/limb/organ_manipulation)
+	operation.on_success_remove_organ(patient.get_bodypart(BODY_ZONE_HEAD), surgeon, tumor, tool)
+	TEST_ASSERT(!QDELETED(tumor) && tumor.loc == get_turf(patient), "Surgery tried to move an already destroyed tumor.")
 	TEST_ASSERT(!HAS_TRAIT(patient, TRAIT_PARADISE_ZOMBIE), "Removing the tumor did not reverse zombification.")
 	TEST_ASSERT(!HAS_TRAIT(patient, TRAIT_NOBREATH), "Surgical cure left the body independent of breathing.")
 	TEST_ASSERT_NULL(locate(/datum/disease/paradise_zombie) in patient.diseases, "Tumor extraction left the plague in the patient.")
-	qdel(tumor)
+	var/deadline = world.time + 1 SECONDS
+	UNTIL(QDELETED(tumor) || world.time >= deadline)
+	TEST_ASSERT(QDELETED(tumor), "The extracted tumor did not expire after surgery.")
 
 /// The new language must be usable with an ordinary tongue and leave no blocks after mind transfer.
 /datum/unit_test/paradise_zombie_language_and_transfer/Run()
@@ -41,10 +47,14 @@
 	TEST_ASSERT(patient.can_speak_language(/datum/language/paradise_zombie), "The ordinary human tongue prevented zombie speech.")
 	TEST_ASSERT(!patient.can_speak_language(/datum/language/common), "A zombie could still speak its old language.")
 	var/datum/mind/mind = patient.mind
+	patient.add_to_current_living_antags()
+	TEST_ASSERT(patient in GLOB.current_living_antags, "The fixture was not registered as a living antagonist.")
 	mind.transfer_to(new_body)
+	TEST_ASSERT(!(patient in GLOB.current_living_antags), "Mind transfer left the abandoned body registered as a living antagonist.")
 	TEST_ASSERT(!mind.has_antag_datum(/datum/antagonist/paradise_zombie), "The zombie antagonist crossed into an uninfected body.")
 	TEST_ASSERT(new_body.can_speak_language(/datum/language/common), "Zombie language restrictions leaked into the new body.")
 	TEST_ASSERT(patient.can_speak_language(/datum/language/common), "The old body's language source was not restored on mind transfer.")
+	TEST_ASSERT_NOTNULL(patient.GetComponent(/datum/component/paradise_zombie_combat), "Mind transfer removed the old body's infection-owned combat component.")
 	patient.check_breath(null)
 	TEST_ASSERT_EQUAL(patient.get_oxy_loss(), 0, "The abandoned infected body started suffocating after its mind left.")
 

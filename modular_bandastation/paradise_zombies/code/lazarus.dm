@@ -17,7 +17,7 @@
 
 /datum/reagent/medicine/strange_reagent/expose_mob(mob/living/exposed_mob, methods = TOUCH, reac_volume, show_message = TRUE, touch_protection = 0)
 	. = ..()
-	if(reac_volume < 1 || exposed_mob.stat != DEAD || !pre_rez_check(exposed_mob) || exposed_mob.reagents?.is_reagent_immune())
+	if(reac_volume < 1 || exposed_mob.stat != DEAD || !(exposed_mob.mob_biotypes & MOB_ORGANIC) || !pre_rez_check(exposed_mob) || exposed_mob.reagents?.is_reagent_immune())
 		return
 	if((methods & TOUCH) && exposed_mob.compare_sentience_type(SENTIENCE_ORGANIC))
 		if(exposed_mob.revive(HEAL_ALL))
@@ -43,26 +43,32 @@
 			return
 		carbon.gib()
 		return
-	if(carbon.paradise_lazarus_pending)
+	if(!isnull(carbon.paradise_lazarus_pending_death) && carbon.paradise_lazarus_pending_death == carbon.timeofdeath)
 		return
-	carbon.paradise_lazarus_pending = TRUE
+	carbon.paradise_lazarus_pending_death = carbon.timeofdeath
 	carbon.visible_message(span_notice("[carbon] начинает дёргаться под действием реагента Лазаря!"))
 	carbon.do_jitter_animation(30 SECONDS)
 	carbon.notify_revival("Реагент Лазаря пытается оживить ваше тело. Вернитесь в него, чтобы воскреснуть!")
 	if(instant)
-		carbon.paradise_lazarus_revival()
+		carbon.paradise_lazarus_revival(carbon.timeofdeath)
 	else
-		addtimer(CALLBACK(carbon, TYPE_PROC_REF(/mob/living/carbon, paradise_lazarus_revival)), 5 SECONDS, TIMER_UNIQUE)
+		addtimer(CALLBACK(carbon, TYPE_PROC_REF(/mob/living/carbon, paradise_lazarus_revival), carbon.timeofdeath), 5 SECONDS, TIMER_UNIQUE)
 
 /mob/living/carbon
-	/// Guards simultaneous exposures scheduling multiple Lazarus revivals.
-	var/paradise_lazarus_pending = FALSE
+	/// Time of death for the latest pending dose, or null when no dose is pending.
+	var/paradise_lazarus_pending_death
 
 /** Resolves a Lazarus exposure after the original five-second return window. */
-/mob/living/carbon/proc/paradise_lazarus_revival()
-	paradise_lazarus_pending = FALSE
+/mob/living/carbon/proc/paradise_lazarus_revival(exposed_time_of_death)
+	if(paradise_lazarus_pending_death != exposed_time_of_death)
+		return
+	paradise_lazarus_pending_death = null
 	var/datum/status_effect/paradise_cloning_damage/cloning_damage = has_status_effect(/datum/status_effect/paradise_cloning_damage)
-	if(stat != DEAD || get_ghost() || HAS_TRAIT(src, TRAIT_SUICIDED) || HAS_TRAIT(src, TRAIT_HUSK) || get_brute_loss() + get_fire_loss() + cloning_damage?.amount >= 150)
+	// Check the anatomical requirement before damage. The native health check follows oxygen restoration.
+	var/has_brain = HAS_TRAIT(src, TRAIT_BRAINLESS_CARBON) || HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE) || get_organ_by_type(/obj/item/organ/brain)
+	if(stat != DEAD || timeofdeath != exposed_time_of_death || !(mob_biotypes & MOB_ORGANIC) || !has_brain \
+		|| reagents?.is_reagent_immune() || get_ghost() || HAS_TRAIT(src, TRAIT_SUICIDED) || HAS_TRAIT(src, TRAIT_HUSK) \
+		|| HAS_TRAIT(src, TRAIT_BADDNA) || get_brute_loss() + get_fire_loss() + cloning_damage?.amount >= 150)
 		visible_message(span_warning("[src] перестаёт дёргаться: реагент Лазаря теряет силу."))
 		return
 	set_oxy_loss(0, updating_health = FALSE)
@@ -127,6 +133,8 @@
 	if(human.stat != DEAD)
 		return PROCESS_KILL
 	update_decay()
+	if(decay_level == 4)
+		return PROCESS_KILL
 
 /** Cold does not halt these original whole-body stages; preservation retains the already reached level. */
 /datum/component/paradise_corpse_decay/proc/update_decay()

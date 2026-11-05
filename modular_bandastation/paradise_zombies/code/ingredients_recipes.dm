@@ -37,7 +37,7 @@
 	if(!..())
 		return FALSE
 	var/ash = holder.get_reagent_amount(/datum/reagent/ash)
-	return ash <= 0 || holder.get_reagent_amount(/datum/reagent/consumable/salt) < 5 * ash
+	return ash < 1 || holder.get_reagent_amount(/datum/reagent/consumable/salt) < 5 * ash
 
 /datum/chemical_reaction/ammonia/pre_reaction_other_checks(datum/reagents/holder)
 	if(!..())

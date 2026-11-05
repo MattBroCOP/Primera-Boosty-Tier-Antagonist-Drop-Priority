@@ -133,7 +133,7 @@
 	parent_type = /datum/unit_test/paradise_zombie_combat
 
 /datum/unit_test/paradise_zombie_brain_feeding/Run()
-	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
+	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent/slow)
 	ADD_TRAIT(user, TRAIT_PARADISE_ZOMBIE, TRAIT_GENERIC)
 	var/datum/component/paradise_zombie_combat/combat = user.AddComponent(/datum/component/paradise_zombie_combat)
 	user.set_combat_mode(TRUE)
@@ -158,6 +158,14 @@
 	claws.attack_self(user)
 	TEST_ASSERT_EQUAL(length(user.get_held_items()), 0, "The feeding fixture still holds its claws.")
 	var/brain_damage_before = target.get_organ_loss(ORGAN_SLOT_BRAIN)
+	user.UnarmedAttack(target, TRUE, list())
+	TEST_ASSERT(combat.eating, "The pacifism fixture did not enter the actual feeding action.")
+	ADD_TRAIT(user, TRAIT_PACIFISM, TRAIT_SOURCE_UNIT_TESTS)
+	deadline = world.time + 5 SECONDS
+	UNTIL(!combat.eating || world.time >= deadline)
+	TEST_ASSERT(!combat.eating, "Feeding did not finish after the attacker became pacifist.")
+	TEST_ASSERT_EQUAL(target.get_organ_loss(ORGAN_SLOT_BRAIN), brain_damage_before, "Feeding ignored pacifism gained during the action.")
+	REMOVE_TRAIT(user, TRAIT_PACIFISM, TRAIT_SOURCE_UNIT_TESTS)
 	user.UnarmedAttack(target, TRUE, list())
 	deadline = world.time + 5 SECONDS
 	UNTIL(!combat.eating || world.time >= deadline)

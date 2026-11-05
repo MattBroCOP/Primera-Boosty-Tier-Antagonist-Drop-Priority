@@ -121,6 +121,7 @@
 			if(rot?.infected)
 				rot.heal_necrosis()
 	if(!QDELETED(src))
-		qdel(src)
+		// The removal caller still needs to place the extracted organ and run its callbacks.
+		QDEL_IN(src, 0)
 
 #undef PARADISE_ZOMBIE_LIMB_COLOR_PRIORITY

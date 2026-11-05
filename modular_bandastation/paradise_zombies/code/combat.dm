@@ -118,6 +118,7 @@
 			infection = locate() in target.diseases
 		if(infection)
 			infection.stage = max(5, infection.stage)
+	var/datum/mind/feeding_mind = user.mind
 	var/completed = do_after(user, 1 SECONDS, target = target)
 	if(QDELETED(src))
 		return
@@ -126,7 +127,7 @@
 		return
 	if(QDELETED(user) || QDELETED(target) || QDELETED(brain_holder) || QDELETED(brain) || !user.Adjacent(target) || !user.combat_mode || !user.can_unarmed_attack())
 		return
-	if(user.get_active_held_item() || !HAS_TRAIT(user, TRAIT_PARADISE_ZOMBIE) || target.get_organ_slot(ORGAN_SLOT_BRAIN) != brain || brain_holder.owner != target)
+	if(user.mind != feeding_mind || HAS_TRAIT(user, TRAIT_PACIFISM) || user.get_active_held_item() || !HAS_TRAIT(user, TRAIT_PARADISE_ZOMBIE) || target.get_organ_slot(ORGAN_SLOT_BRAIN) != brain || brain_holder.owner != target)
 		return
 	if(HAS_TRAIT(target, TRAIT_PARADISE_ZOMBIE) || (target.mob_biotypes & MOB_ROBOTIC))
 		return
@@ -341,6 +342,7 @@
 	user.visible_message(span_danger("[user] вонзает когти в череп [target]!"))
 	to_chat(target, span_userdanger("Когти [user] впиваются в ваш череп!"))
 	playsound(user, 'modular_bandastation/paradise_zombies/sound/armblade.ogg', 50, TRUE)
+	var/datum/mind/opening_mind = user.mind
 	var/completed = do_after(user, 3 SECONDS, target = target)
 	if(QDELETED(src))
 		return
@@ -349,7 +351,7 @@
 		return
 	if(QDELETED(user) || QDELETED(target) || QDELETED(brain_holder) || QDELETED(brain) || user.get_active_held_item() != src || !user.Adjacent(target))
 		return
-	if(brain_holder.owner != target || target.get_organ_slot(ORGAN_SLOT_BRAIN) != brain || user.zone_selected != brain_holder.body_zone)
+	if(user.mind != opening_mind || HAS_TRAIT(user, TRAIT_PACIFISM) || brain_holder.owner != target || target.get_organ_slot(ORGAN_SLOT_BRAIN) != brain || user.zone_selected != brain_holder.body_zone)
 		return
 	if(brain_holder.get_damage() <= brain_holder.max_damage - 5 || target.getarmor(brain_holder.body_zone, MELEE) > 0 || LIMB_HAS_SURGERY_STATE(brain_holder, SURGERY_SKIN_OPEN|SURGERY_BONE_SAWED))
 		return

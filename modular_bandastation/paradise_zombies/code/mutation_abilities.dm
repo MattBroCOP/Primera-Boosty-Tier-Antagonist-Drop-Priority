@@ -125,12 +125,12 @@
 	if(!owner || owner == previous_owner)
 		return .
 	removing = FALSE
-	RegisterSignal(granted_to, COMSIG_LIVING_DEATH, PROC_REF(on_owner_died))
+	RegisterSignals(granted_to, list(COMSIG_LIVING_DEATH, COMSIG_MOB_MIND_TRANSFERRED_INTO, COMSIG_MOB_MIND_TRANSFERRED_OUT_OF), PROC_REF(on_owner_interrupted))
 
 /datum/action/cooldown/paradise_zombie_mutation/Remove(mob/removed_from)
 	removing = TRUE
 	clear_effects()
-	UnregisterSignal(removed_from, COMSIG_LIVING_DEATH)
+	UnregisterSignal(removed_from, list(COMSIG_LIVING_DEATH, COMSIG_MOB_MIND_TRANSFERRED_INTO, COMSIG_MOB_MIND_TRANSFERRED_OUT_OF))
 	return ..()
 
 /datum/action/cooldown/paradise_zombie_mutation/Destroy()
@@ -164,7 +164,7 @@
 		qdel(effect)
 	owned_effects.Cut()
 
-/datum/action/cooldown/paradise_zombie_mutation/proc/on_owner_died()
+/datum/action/cooldown/paradise_zombie_mutation/proc/on_owner_interrupted()
 	SIGNAL_HANDLER
 	clear_effects()
 
@@ -323,7 +323,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/bile/Activate(atom/target)
 	var/mob/living/carbon/human/user = owner
 	var/turf/destination = get_turf(target)
-	if(!IsAvailable() || !destination || !isturf(user.loc) || destination.z != user.z || get_dist(user, destination) > 13 || destination == user.loc)
+	if(!IsAvailable() || !destination || !isturf(user.loc) || destination.z != user.z || get_dist_euclidean(user, destination) > /obj/projectile/paradise_zombie_bile::range || destination == user.loc)
 		return FALSE
 	if(isliving(target) && !can_hit(target))
 		return FALSE

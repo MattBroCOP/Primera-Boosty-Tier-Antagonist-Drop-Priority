@@ -96,16 +96,17 @@
 
 /** The 1:1 native recipe remains available beside the 1:5 Paradise recipe. */
 /datum/unit_test/paradise_charcoal_multiver_compatibility/Run()
-	var/obj/item/reagent_containers/cup/beaker/beaker = allocate(/obj/item/reagent_containers/cup/beaker)
-	var/datum/reagents/holder = beaker.reagents
-	holder.flags |= NO_REACT
-	holder.add_reagent(/datum/reagent/ash, 1)
-	holder.add_reagent(/datum/reagent/consumable/salt, 1)
-	holder.set_temperature(400)
-	holder.flags &= ~NO_REACT
-	holder.handle_reactions()
-	TEST_ASSERT(holder.has_reagent(/datum/reagent/medicine/c2/multiver), "Native Multiver could not start from its original 1:1 mixture.")
-	TEST_ASSERT(!holder.has_reagent(/datum/reagent/medicine/paradise_charcoal), "Charcoal stole reactants from the native 1:1 Multiver mixture.")
+	for(var/list/mixture as anything in list(list(1, 1), list(0.5, 2.5)))
+		var/obj/item/reagent_containers/cup/beaker/beaker = allocate(/obj/item/reagent_containers/cup/beaker)
+		var/datum/reagents/holder = beaker.reagents
+		holder.flags |= NO_REACT
+		holder.add_reagent(/datum/reagent/ash, mixture[1])
+		holder.add_reagent(/datum/reagent/consumable/salt, mixture[2])
+		holder.set_temperature(400)
+		holder.flags &= ~NO_REACT
+		holder.handle_reactions()
+		TEST_ASSERT(holder.has_reagent(/datum/reagent/medicine/c2/multiver), "Native Multiver did not start with [mixture[1]]u ash and [mixture[2]]u salt.")
+		TEST_ASSERT(!holder.has_reagent(/datum/reagent/medicine/paradise_charcoal), "Charcoal stole reactants from a native Multiver mixture.")
 
 /** Kingston blood retains its chosen mutation, which preserves damage and absent limbs. */
 /datum/unit_test/paradise_plague_kingstons/Run()
@@ -313,7 +314,8 @@
 	patient.set_oxy_loss(300)
 	TEST_ASSERT(!patient.revive(), "The oxygen-damage fixture unexpectedly passed native revival before its damage was treated.")
 	TEST_ASSERT_EQUAL(decay.decay_level, 4, "An unsuccessful native revival reset the corpse's reached decay level.")
-	patient.paradise_lazarus_revival()
+	var/datum/reagent/medicine/strange_reagent/instant/lazarus = allocate(/datum/reagent/medicine/strange_reagent/instant)
+	lazarus.expose_mob(patient, INGEST, 1)
 	TEST_ASSERT_NOTEQUAL(patient.stat, DEAD, "Lazarus could not revive the decayed corpse through its real revival callback.")
 	TEST_ASSERT_EQUAL(patient.get_oxy_loss(), 0, "Lazarus failed to clear the suffocation that native revival initially rejected.")
 	TEST_ASSERT_EQUAL(decay.decay_level, 0, "Lazarus revival did not reset its source decay level.")

@@ -42,6 +42,7 @@
 /datum/component/paradise_zombie_mutation/proc/on_mind_arrived()
 	SIGNAL_HANDLER
 	var/mob/living/carbon/human/host = parent
+	stop_mutation_visuals()
 	GLOB.paradise_zombie_mutation_progression.note_infection(host)
 	GLOB.paradise_zombie_mutation_progression.register_zombie(host)
 	if(!form && !selection_action && GLOB.paradise_zombie_mutation_progression.is_mature_zombie(host))
@@ -150,7 +151,9 @@
 			to_chat(host, span_warning(reason))
 		return FALSE
 	for(var/obj/item/item as anything in host.get_equipped_items(INCLUDE_POCKETS|INCLUDE_HELD))
-		if(!host.dropItemToGround(item) || QDELETED(src) || !is_active())
+		if(QDELETED(item) || item.loc != host || !(item.item_flags & IN_INVENTORY))
+			continue
+		if((!host.dropItemToGround(item) && !QDELETED(item)) || QDELETED(src) || !is_active())
 			GLOB.paradise_zombie_mutation_progression.release_body(host)
 			return FALSE
 	form = chosen

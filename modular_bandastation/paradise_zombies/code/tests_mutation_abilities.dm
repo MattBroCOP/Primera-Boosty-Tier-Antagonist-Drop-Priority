@@ -234,6 +234,14 @@
 	TEST_ASSERT(action.Trigger(host, target = destination), "The cleanup fixture could not start a second dash.")
 	var/datum/thrownthing/flight = host.throwing
 	TEST_ASSERT_NOTNULL(flight, "The deferred dash did not install a real throw datum.")
+	var/mob/living/carbon/human/new_body = allocate(/mob/living/carbon/human/consistent, start)
+	host.mind.transfer_to(new_body)
+	TEST_ASSERT(QDELETED(flight) && !host.throwing, "Transferring the mind left its old body in a dash.")
+	TEST_ASSERT(!QDELETED(action), "Transferring the mind removed the old body's mutation ability.")
+	new_body.mind.transfer_to(host)
+	action.ResetCooldown()
+	TEST_ASSERT(action.Trigger(host, target = destination), "The returned mind could not start another dash.")
+	flight = host.throwing
 	var/datum/disease/paradise_zombie/infection = locate() in host.diseases
 	infection.cure()
 	TEST_ASSERT(QDELETED(action) && QDELETED(flight), "Curing a mutant retained its dash action or in-flight effect.")
@@ -329,7 +337,8 @@
 	TEST_ASSERT_NOTNULL(action, "Spitter did not receive its real bile action.")
 	var/cooldown_before = action.next_use_time
 	TEST_ASSERT(!action.Trigger(host, target = locate(host.x + 14, host.y, host.z)), "Bile accepted a target fourteen tiles away.")
-	TEST_ASSERT_EQUAL(action.next_use_time, cooldown_before, "Rejecting a fourteen-tile shot consumed its cooldown.")
+	TEST_ASSERT(!action.Trigger(host, target = locate(host.x + 10, host.y + 10, host.z)), "Bile accepted a diagonal shot beyond its actual flight distance.")
+	TEST_ASSERT_EQUAL(action.next_use_time, cooldown_before, "Rejecting an out-of-range shot consumed its cooldown.")
 	TEST_ASSERT_EQUAL(length(action.owned_effects), 0, "Rejecting an out-of-range shot created a projectile or residue.")
 	var/mob/living/carbon/human/friend = make_zombie(locate(host.x + 2, host.y, host.z))
 	TEST_ASSERT_NOTNULL(friend, "The friendly-fire fixture was not created.")
@@ -367,7 +376,7 @@
 	TEST_ASSERT(victim.get_fire_loss() > damage_before_prone_shot, "The actual bile projectile passed over its clicked prone victim.")
 	expiry = puddle.expiry_timer
 	action.ResetCooldown()
-	TEST_ASSERT(action.Trigger(host, target = locate(host.x + 13, host.y + 3, host.z)), "The cleanup fixture could not launch a still-flying third shot.")
+	TEST_ASSERT(action.Trigger(host, target = locate(host.x + 12, host.y + 3, host.z)), "The cleanup fixture could not launch a still-flying third shot.")
 	var/obj/projectile/paradise_zombie_bile/in_flight = locate() in action.owned_effects
 	TEST_ASSERT_NOTNULL(in_flight, "The action did not retain its actual in-flight projectile.")
 	var/datum/disease/paradise_zombie/infection = locate() in host.diseases
