@@ -159,6 +159,7 @@
 // Rebuilding is a hack. We should really store a list of indexes into our existing overlay list or SOMETHING
 // IDK. will work for now though, which is a lot better then not working at all
 /mob/living/carbon/proc/update_z_overlays(new_offset, rebuild = FALSE)
+	var/list/applied_overlays = overlays.Copy()
 	// Null entries will be filtered here
 	for(var/i in 1 to length(overlays_standing))
 		var/list/cache_grouping = overlays_standing[i]
@@ -167,9 +168,10 @@
 		// Need this so we can have an index, could build index into the list if we need to tho, check
 		if(!length(cache_grouping))
 			continue
-		overlays_standing[i] = update_appearance_planes(cache_grouping, new_offset)
+		overlays_standing[i] = update_appearance_planes(cache_grouping, new_offset, applied_overlays)
 
-/atom/proc/update_appearance_planes(list/mutable_appearance/appearances, new_offset)
+/// Rebuilds cached appearances for a new plane offset. A snapshot of applied overlays preserves their visibility.
+/atom/proc/update_appearance_planes(list/mutable_appearance/appearances, new_offset, list/applied_overlays)
 	var/list/build_list = build_planeed_apperance_queue(appearances)
 
 	if(!length(build_list))
@@ -184,7 +186,9 @@
 	// Note, we need to do this separately because you can only remove a mutable appearance when it
 	// Exactly matches the appearance it had when it was first "made static" (by being added to the overlays list)
 	var/parents_index = 0
-	for(var/item in processing_queue)
+	var/list/hidden_roots
+	for(var/index in 1 to length(processing_queue))
+		var/item = processing_queue[index]
 		if(item == NEXT_PARENT_COMMAND)
 			parents_index++
 			continue
@@ -193,7 +197,9 @@
 			var/parent_src_index = parents_queue[parents_index]
 			var/mutable_appearance/parent = processing_queue[parent_src_index]
 			parent.overlays -= iter_apper.appearance
-		else // Otherwise, we're at the end of the list, and our parent is the mob
+		else if(applied_overlays && !(iter_apper.appearance in applied_overlays))
+			LAZYADD(hidden_roots, index)
+		else
 			cut_overlay(iter_apper)
 
 	// Now the back to front stuff, to readd the updated appearances
@@ -215,13 +221,14 @@
 			var/mutable_appearance/parent = processing_queue[parent_src_index]
 			parent.overlays += new_iter.appearance
 		else
-			add_overlay(new_iter)
-			// chant a protective overlays.Copy to prevent appearance theft and overlay sticking
-			// I'm not joking without this overlays can corrupt and be replaced by other appearances
-			// the compiler might call it useless but I swear it works
-			// we conjure the spirits of the computer with our spells, we conjur- (Hey lemon make a damn issue report already)
-			var/list/does_nothing = new_iter.overlays.Copy()
-			pass(does_nothing)
+			if(!(queue_index in hidden_roots))
+				add_overlay(new_iter)
+				// chant a protective overlays.Copy to prevent appearance theft and overlay sticking
+				// I'm not joking without this overlays can corrupt and be replaced by other appearances
+				// the compiler might call it useless but I swear it works
+				// we conjure the spirits of the computer with our spells, we conjur- (Hey lemon make a damn issue report already)
+				var/list/does_nothing = new_iter.overlays.Copy()
+				pass(does_nothing)
 			hand_back += new_iter
 
 		queue_index--

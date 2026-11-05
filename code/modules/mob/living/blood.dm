@@ -190,6 +190,8 @@
 
 	// Takes into account modifiers like saline-glucose solution in the blood
 	var/modified_blood_volume = get_blood_volume(apply_modifiers = TRUE)
+	if(modified_blood_volume < BLOOD_VOLUME_NORMAL && HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE))
+		return
 
 	// Some effects are halved mid-combat.
 	var/determined_mod = has_status_effect(/datum/status_effect/determined) ? 0.5 : 1
@@ -268,7 +270,7 @@
 
 /// Bleeds amount units of blood from the mob, sometimes creating a blood splatter on the floor.
 /mob/living/proc/bleed(amount)
-	if(HAS_TRAIT(src, TRAIT_GODMODE) || !can_bleed())
+	if(HAS_TRAIT(src, TRAIT_GODMODE) || HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE) || !can_bleed())
 		return
 
 	amount *= GET_PHYSIOLOGY(src, PHYS_COEFF_BLEED)

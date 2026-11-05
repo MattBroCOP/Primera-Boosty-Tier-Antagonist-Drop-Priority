@@ -1676,7 +1676,7 @@
 	if(!owner)
 		return
 
-	if(!can_bleed())
+	if(!can_bleed() || HAS_TRAIT(owner, TRAIT_PARADISE_ZOMBIE))
 		if(cached_bleed_rate != old_bleed_rate)
 			update_part_wound_overlay()
 		return

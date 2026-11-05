@@ -15,9 +15,21 @@
 	player_ckey = zombie.ckey || ckey(zombie.mind?.key) || ckey(zombie.last_mind?.key)
 	START_PROCESSING(SSprocessing, src)
 
+/datum/component/paradise_zombie_regen/RegisterWithParent()
+	RegisterSignals(parent, list(SIGNAL_ADDTRAIT(TRAIT_PARADISE_ZOMBIE), SIGNAL_REMOVETRAIT(TRAIT_PARADISE_ZOMBIE)), PROC_REF(refresh_bleeding))
+
+/datum/component/paradise_zombie_regen/UnregisterFromParent()
+	UnregisterSignal(parent, list(SIGNAL_ADDTRAIT(TRAIT_PARADISE_ZOMBIE), SIGNAL_REMOVETRAIT(TRAIT_PARADISE_ZOMBIE)))
+
 /datum/component/paradise_zombie_regen/Destroy(force)
 	STOP_PROCESSING(SSprocessing, src)
 	return ..()
+
+/// Update wound bleeding immediately on transformation and cure.
+/datum/component/paradise_zombie_regen/proc/refresh_bleeding(mob/living/carbon/human/zombie)
+	SIGNAL_HANDLER
+	for(var/obj/item/bodypart/limb as anything in zombie.get_bodyparts())
+		limb.refresh_bleed_rate()
 
 /datum/component/paradise_zombie_regen/process(seconds_per_tick)
 	var/mob/living/carbon/human/zombie = parent
@@ -42,8 +54,10 @@
 			if(SPT_PROB(20, seconds_per_tick))
 				burn.remove_wound()
 			break
-	zombie.heal_overall_damage(healing_factor * seconds_per_tick, healing_factor * seconds_per_tick, required_bodytype = BODYTYPE_ORGANIC)
-	zombie.adjust_organ_loss(ORGAN_SLOT_BRAIN, -healing_factor * seconds_per_tick)
+	var/healing_amount = healing_factor * seconds_per_tick
+	zombie.heal_overall_damage(healing_amount, healing_amount, required_bodytype = BODYTYPE_ORGANIC)
+	zombie.adjust_organ_loss(ORGAN_SLOT_BRAIN, -healing_amount)
+	zombie.adjust_blood_volume(healing_amount, maximum = zombie.default_blood_volume)
 	if(zombie.stat == DEAD && zombie.get_brute_loss_for_type(BODYTYPE_ORGANIC) <= 1 && zombie.get_fire_loss_for_type(BODYTYPE_ORGANIC) <= 1 && zombie.timeofdeath + 15 SECONDS <= world.time)
 		var/datum/reagent/medicine/paradise_zombie_cure/omega/treatment = zombie.reagents.has_reagent(/datum/reagent/medicine/paradise_zombie_cure/omega)
 		if(treatment)

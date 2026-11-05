@@ -48,6 +48,46 @@
 	TEST_ASSERT_NOTEQUAL(patient.stat, DEAD, "The same zombie could not rise again after Omega was removed.")
 	TEST_ASSERT(!HAS_TRAIT(patient, TRAIT_MUTE) && !HAS_TRAIT(patient, TRAIT_DEAF), "A repeated resurrection failed to cure newly acquired speech and hearing mutations.")
 
+/** Transformation suppresses real bleeding and restores blood until the infection is cured. */
+/datum/unit_test/paradise_zombie_blood_recovery/Run()
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
+	patient.set_nutrition(0)
+	var/obj/item/bodypart/chest = patient.get_bodypart(BODY_ZONE_CHEST)
+	var/datum/wound/slash/flesh/wound = chest.force_wound_upwards(/datum/wound/slash/flesh/moderate)
+	TEST_ASSERT(wound in chest.wounds, "The fixture could not receive a real bleeding wound.")
+	TEST_ASSERT(patient.is_bleeding(), "The fixture has no active bleeding before transformation.")
+	var/datum/disease/paradise_zombie/infection = new
+	TEST_ASSERT(patient.ForceContractDisease(infection, make_copy = FALSE, del_on_fail = TRUE), "The bleeding fixture could not contract the plague.")
+	infection.stage = 8
+	infection.process_infection_cycle()
+	TEST_ASSERT(HAS_TRAIT(patient, TRAIT_PARADISE_ZOMBIE), "The bleeding fixture did not transform.")
+	TEST_ASSERT(!patient.is_bleeding(), "Transformation left the patient's wound bleeding.")
+	patient.set_blood_volume(BLOOD_VOLUME_SURVIVE - 1)
+	var/blood_before = patient.get_blood_volume()
+	patient.bleed(10)
+	patient.handle_blood(1)
+	TEST_ASSERT_EQUAL(patient.get_blood_volume(), blood_before, "A zombie continued losing blood from an existing wound or direct bleeding.")
+	TEST_ASSERT_NOTEQUAL(patient.stat, DEAD, "Low blood volume killed the zombie before it could regenerate.")
+
+	var/datum/component/paradise_zombie_regen/regeneration = patient.GetComponent(/datum/component/paradise_zombie_regen)
+	TEST_ASSERT_NOTNULL(regeneration, "The transformed body did not acquire its regeneration component.")
+	regeneration.process(1)
+	TEST_ASSERT(patient.get_blood_volume() > blood_before, "Zombie regeneration did not restore lost blood.")
+	patient.set_blood_volume(patient.default_blood_volume - 0.1)
+	regeneration.process(1)
+	TEST_ASSERT_EQUAL(patient.get_blood_volume(), patient.default_blood_volume, "Zombie regeneration failed to cap blood at the body's normal volume.")
+	var/obj/item/reagent_containers/cup/beaker/sample = allocate(/obj/item/reagent_containers/cup/beaker)
+	TEST_ASSERT_EQUAL(patient.transfer_blood_to(sample, 1), 1, "A nonbleeding zombie could not provide a laboratory sample.")
+	var/datum/reagent/blood/blood = sample.reagents.has_reagent(/datum/reagent/blood)
+	TEST_ASSERT(locate(/datum/disease/paradise_zombie) in blood?.data?["viruses"], "The laboratory sample did not carry the zombie plague.")
+
+	infection.cure()
+	TEST_ASSERT(wound in chest.wounds, "Transformation or cure removed the underlying wound.")
+	TEST_ASSERT(patient.is_bleeding(), "Curing the infection did not restore bleeding from the existing wound.")
+	blood_before = patient.get_blood_volume()
+	patient.handle_blood(1)
+	TEST_ASSERT(patient.get_blood_volume() < blood_before, "Curing the infection left the patient immune to blood loss.")
+
 /** A remembered research sequence cannot cure a transformed body after the actual Omega dose is removed. */
 /datum/unit_test/paradise_zombie_current_omega_required/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)

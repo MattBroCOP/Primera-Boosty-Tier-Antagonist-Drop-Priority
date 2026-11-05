@@ -185,4 +185,25 @@
 		TEST_ASSERT_NOTNULL(live_body.filters[height_filter], "The TGMC body ignores the height treatment applied to its clothing and eyewear.")
 	// getFlatIcon does not render displacement filters; client rendering needs separate visual verification.
 
+/** Changing Z planes keeps the native anatomy hidden behind either zombie body. */
+/datum/unit_test/paradise_zombie_z_overlay_visibility
+	parent_type = /datum/unit_test/paradise_zombie_appearance_test
+
+/datum/unit_test/paradise_zombie_z_overlay_visibility/Run()
+	var/mob/living/carbon/human/ordinary = make_zombie(run_loc_floor_top_right)
+	var/mob/living/carbon/human/mutant = make_mutant("brute")
+	var/obj/item/storage/backpack/backpack = allocate(/obj/item/storage/backpack)
+	TEST_ASSERT(ordinary.equip_to_slot_if_possible(backpack, ITEM_SLOT_BACK, disable_warning = TRUE, bypass_equip_delay_self = TRUE), "The ordinary zombie could not wear the backpack used to check visible overlays.")
+	for(var/mob/living/carbon/human/host as anything in list(ordinary, mutant))
+		var/visible_count = length(host.overlays)
+		host.update_z_overlays(GET_TURF_PLANE_OFFSET(host), rebuild = TRUE)
+		var/list/native_body = host.overlays_standing[BODYPARTS_LAYER]
+		TEST_ASSERT(length(native_body), "Rebuilding the Z planes discarded the zombie's native anatomy cache.")
+		for(var/mutable_appearance/bodypart as anything in native_body)
+			TEST_ASSERT(!(bodypart.appearance in host.overlays), "Rebuilding the Z planes revealed native body parts on [host].")
+		TEST_ASSERT_EQUAL(length(host.overlays), visible_count, "Rebuilding the Z planes changed the number of visible overlays.")
+	var/list/backpack_overlays = ordinary.overlays_standing[BACK_LAYER]
+	var/mutable_appearance/backpack_overlay = backpack_overlays[1]
+	TEST_ASSERT(backpack_overlay.appearance in ordinary.overlays, "Rebuilding the Z planes removed the ordinary zombie's visible backpack.")
+
 #endif
