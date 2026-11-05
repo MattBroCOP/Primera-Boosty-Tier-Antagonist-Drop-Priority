@@ -7,6 +7,8 @@
 	return ..()
 
 /mob/living/carbon/could_speak_language(datum/language/language_path)
+	if(language_path == /datum/language/paradise_zombie)
+		return TRUE
 	var/obj/item/organ/tongue/spoken_with = get_organ_slot(ORGAN_SLOT_TONGUE)
 	if(spoken_with)
 		// the tower of babel needs to bypass the tongue language restrictions without giving omnitongue

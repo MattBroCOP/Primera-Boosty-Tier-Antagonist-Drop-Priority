@@ -1796,4 +1796,11 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 /// Mobs with this trait will appear as human to medical scanners even if they are not human
 #define TRAIT_HUMAN_DISGUISE "human_disguise"
 
+#define TRAIT_PARADISE_ZOMBIE "paradise_zombie"
+#define TRAIT_PARADISE_ZOMBIE_LIMB "paradise_zombie_limb"
+#define TRAIT_PARADISE_PLAGUE_ZOMBIE "paradise_plague_zombie"
+#define TRAIT_PARADISE_NPC_ZOMBIE "paradise_npc_zombie"
+#define TRAIT_PARADISE_NON_INFECTIOUS_ZOMBIE "paradise_non_infectious_zombie"
 // END TRAIT DEFINES
+
+#define PARADISE_ZOMBIE_TRAIT "paradise_zombie"

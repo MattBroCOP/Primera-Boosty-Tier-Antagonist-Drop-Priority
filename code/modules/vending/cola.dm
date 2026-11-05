@@ -56,6 +56,8 @@
 		)
 
 /obj/machinery/vending/cola/Initialize(mapload)
+	products = products.Copy()
+	products[/obj/item/reagent_containers/cup/soda_cans/paradise_ginger_ale] = 10
 	. = ..()
 	if(!mapload || !is_station_level(z) || !HAS_TRAIT(SSstation, STATION_TRAIT_VENDING_SHORTAGE))
 		return

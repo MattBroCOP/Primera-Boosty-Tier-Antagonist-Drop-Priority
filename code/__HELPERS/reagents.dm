@@ -183,9 +183,13 @@
 
 ///Returns reagent datum from reagent name string
 /proc/get_chem_id(chem_name)
+	if(!istext(chem_name) || !length(chem_name))
+		return
+	var/lower_name = LOWER_TEXT(chem_name)
+	var/name_key = ckey(lower_name)
 	for(var/X in GLOB.chemical_reagents_list)
 		var/datum/reagent/R = GLOB.chemical_reagents_list[X]
-		if(ckey(chem_name) == ckey(LOWER_TEXT(R.name)))
+		if(lower_name == LOWER_TEXT(R.name) || (length(name_key) && name_key == ckey(LOWER_TEXT(R.name))))
 			return X
 
 /proc/reagent_paths_list_to_text(list/reagents, addendum)

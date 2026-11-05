@@ -188,13 +188,13 @@
 
 	// Blood Info
 	if(HAS_TRAIT(scanned, TRAIT_HUSK))
-		autopsy_information += "Subject is husked by: "
+		autopsy_information += "Причина превращения субъекта в хаска: "
 		if(HAS_TRAIT_FROM(scanned, TRAIT_HUSK, CHANGELING_DRAIN))
 			autopsy_information += "Desiccation, commonly caused by Changelings.</br>"
 		else if(HAS_TRAIT_FROM(scanned, TRAIT_HUSK, SKELETON_TRAIT))
 			autopsy_information += "Stripped flesh.</br>"
-		else if(HAS_TRAIT_FROM(scanned, TRAIT_HUSK, /datum/status_effect/zombie::id))
-			autopsy_information += "Zombification.</br>"
+		else if(HAS_TRAIT_FROM(scanned, TRAIT_HUSK, PARADISE_ZOMBIE_TRAIT))
+			autopsy_information += "Зомбификация.</br>"
 		else if(!HAS_TRAIT_FROM(scanned, TRAIT_HUSK, BURN)) // prioritize showing unknown causes over burns
 			autopsy_information += "Unknown causes.</br>"
 		else
@@ -228,10 +228,10 @@
 		autopsy_information += "<i>&rdsh; [scanned_reagents.description]</i></br>"
 	autopsy_information += "<hr>"
 
-	autopsy_information += "<u>Disease Data:</u></br>"
+	autopsy_information += "<u>Данные о болезнях:</u></br>"
 	for(var/datum/disease/diseases as anything in scanned.diseases)
-		autopsy_information += "<b>Disease Name:</b> \"[diseases.name]\"</br>"
-		autopsy_information += "<b>Transmission Type:</b> [diseases.spread_text]</br>"
+		autopsy_information += "<b>Название болезни:</b> \"[diseases.name]\"</br>"
+		autopsy_information += "<b>Способ передачи:</b> [diseases.spread_text]</br>"
 		if(!istype(diseases, /datum/disease/advance))
 			continue
 		autopsy_information += "<b>Symptoms:</b></br>"

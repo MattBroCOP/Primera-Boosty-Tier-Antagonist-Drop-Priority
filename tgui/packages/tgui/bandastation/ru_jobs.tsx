@@ -51,6 +51,7 @@ export const JOBS_RU = {
   // Event jobs
   'Veteran Security Advisor': 'Ветеран советчик СБ',
   'Bridge Assistant': 'Адъютант',
+  Zombie: 'Зомби',
 };
 
 const REVERSED_JOBS_RU = Object.entries(JOBS_RU).reduce(

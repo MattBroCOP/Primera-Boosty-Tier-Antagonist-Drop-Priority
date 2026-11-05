@@ -258,7 +258,7 @@
 	if(!intentional)
 		return TRUE
 
-	if(user.emotes_used && user.emotes_used[src] + cooldown > world.time)
+	if(user.emotes_used && !isnull(user.emotes_used[src]) && user.emotes_used[src] + cooldown > world.time)
 		var/datum/emote/default_emote = /datum/emote
 		if(cooldown > initial(default_emote.cooldown)) // only worry about longer-than-normal emotes
 			to_chat(user, span_danger("You must wait another [DisplayTimeText(user.emotes_used[src] - world.time + cooldown)] before using that emote."))

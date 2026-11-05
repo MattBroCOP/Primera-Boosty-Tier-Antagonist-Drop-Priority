@@ -101,7 +101,7 @@ ADMIN_VERB(admin_verb_panel, R_NONE, "Admin Verb Panel", "Browse and invoke admi
 			var/mob/mob_target = target
 			entry["name"] = mob_target.name
 			entry["ckey"] = mob_target.ckey || ""
-			entry["job"] = mob_target.mind?.assigned_role?.title || ""
+			entry["job"] = job_title_ru(mob_target.mind?.assigned_role?.title) || ""
 		else if(isturf(target))
 			var/turf/turf_target = target
 			var/area/turf_area = get_area(turf_target)

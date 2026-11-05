@@ -55,8 +55,6 @@ GLOBAL_LIST_EMPTY(rcd_list)
 GLOBAL_LIST_EMPTY(intercoms_list)
 /// list of all pinpointers. Used to change stuff they are pointing to all at once.
 GLOBAL_LIST_EMPTY(pinpointer_list)
-/// A list of all zombie_infection organs, for any mass "animation"
-GLOBAL_LIST_EMPTY(zombie_infection_list)
 /// List of all meteors.
 GLOBAL_LIST_EMPTY(meteor_list)
 /// List of active radio jammers

@@ -1,8 +1,8 @@
 /datum/surgery_operation/limb/bionecrosis
 	name = "Вызвать бионекроз"
 	rnd_name = "Бионекропластика (Некротическое оживление)"
-	desc = "Введение реагентов, стимулирующих рост Ромерол-опухоли в мозге пациента."
-	rnd_desc = "Экспериментальная процедура, вызывающая рост Ромерол-опухоли в мозге пациента."
+	desc = "Введение реагентов, вызывающих некротическую чуму."
+	rnd_desc = "Экспериментальная процедура заражения некротической чумой."
 	implements = list(
 		/obj/item/reagent_containers/syringe = 1,
 		/obj/item/pen = 3.33,
@@ -30,10 +30,12 @@
 
 /datum/surgery_operation/limb/bionecrosis/all_blocked_strings()
 	. = ..()
-	. += "в конечности не должно быть Ромерол-опухоли"
+	. += "пациент не должен быть заражён некротической чумой"
 
 /datum/surgery_operation/limb/bionecrosis/state_check(obj/item/bodypart/limb)
-	if(locate(/obj/item/organ/zombie_infection) in limb)
+	if((locate(/datum/disease/paradise_zombie) in limb.owner?.diseases) || !(limb.owner?.mob_biotypes & MOB_ORGANIC) || HAS_TRAIT(limb.owner, TRAIT_VIRUSIMMUNE))
+		return FALSE
+	if(locate(/obj/item/organ/paradise_zombie_tumor) in limb)
 		return FALSE
 	if(!(locate(/obj/item/organ/brain) in limb))
 		return FALSE
@@ -51,7 +53,7 @@
 	display_results(
 		surgeon,
 		limb.owner,
-		span_notice("Вы начинаете выращивать Ромерол-опухоль в мозге у [limb.owner.declent_ru(GENITIVE)]..."),
+		span_notice("Вы начинаете вводить некротическую инфекцию в мозг [limb.owner.declent_ru(GENITIVE)]..."),
 		span_notice("[surgeon] начинает копаться в мозге у [limb.owner.declent_ru(GENITIVE)]..."),
 		span_notice("[surgeon] начинает операцию на мозге у [limb.owner.declent_ru(GENITIVE)]."),
 	)
@@ -61,15 +63,14 @@
 	display_results(
 		surgeon,
 		limb.owner,
-		span_notice("Вам удаётся вырастить Ромерол-опухоль в мозге у [limb.owner.declent_ru(GENITIVE)]."),
-		span_notice("[surgeon] успешно выращивает Ромерол-опухоль в мозге у [limb.owner.declent_ru(GENITIVE)]!"),
+		span_notice("Вам удаётся заразить [limb.owner.declent_ru(ACCUSATIVE)] некротической чумой."),
+		span_notice("[surgeon] вводит некротическую инфекцию в мозг [limb.owner.declent_ru(GENITIVE)]!"),
 		span_notice("[surgeon] завершает операцию на мозге у [limb.owner.declent_ru(GENITIVE)]."),
 	)
 	display_pain(limb.owner, "На мгновение голова полностью немеет, боль становится невыносимой!")
-	if(locate(/obj/item/organ/zombie_infection) in limb) // they got another one mid surgery? whatever
+	if((locate(/datum/disease/paradise_zombie) in limb.owner?.diseases) || (locate(/obj/item/organ/paradise_zombie_tumor) in limb))
 		return
-	var/obj/item/organ/zombie_infection/z_infection = new()
-	z_infection.Insert(limb.owner)
+	try_to_zombie_infect(limb.owner)
 	for(var/chem in zombie_chems)
 		tool.reagents?.remove_reagent(chem, 1)
 		limb.owner.reagents?.remove_reagent(chem, 1)

@@ -97,6 +97,14 @@ Medical HUD! Basic mode needs suit sensors on.
 
 	for(var/thing in diseases)
 		var/datum/disease/D = thing
+		if(istype(D, /datum/disease/paradise_zombie))
+			var/datum/disease/paradise_zombie/infection = D
+			if(!infection.discovered)
+				continue
+		if(istype(D, /datum/disease/paradise_plague_dependency))
+			var/datum/disease/paradise_plague_dependency/plague = D
+			if(!plague.discovered)
+				continue
 		if(!(D.visibility_flags & HIDDEN_SCANNER))
 			if(!threat || get_disease_severity_value(D.severity) > threat) //a buffing virus gets an icon
 				threat = get_disease_severity_value(D.severity)
@@ -105,7 +113,7 @@ Medical HUD! Basic mode needs suit sensors on.
 
 //helper for getting the appropriate health status
 /proc/RoundHealth(mob/living/M)
-	if(IS_DEAD_OR_FAKING(M))
+	if(IS_DEAD_OR_FAKING(M) || HAS_TRAIT(M, TRAIT_PARADISE_ZOMBIE))
 		return "health-100" //what's our health? it doesn't matter, we're dead, or faking
 	var/maxi_health = M.maxHealth
 	if(iscarbon(M) && M.health < 0)
@@ -185,6 +193,9 @@ Medical HUD! Basic mode needs suit sensors on.
 	return TRUE
 
 /mob/living/carbon/med_hud_set_status()
+	if(HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE))
+		set_hud_image_state(STATUS_HUD, hud_state = "huddead")
+		return FALSE
 	if(HAS_TRAIT(src, TRAIT_XENO_HOST))
 		set_hud_image_state(STATUS_HUD, hud_state = "hudxeno")
 		return FALSE

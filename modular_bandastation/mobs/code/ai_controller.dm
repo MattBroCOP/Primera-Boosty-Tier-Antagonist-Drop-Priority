@@ -126,12 +126,4 @@
 /datum/bt_node/ai_behavior/random_speech/pig/big
 	sound = list('modular_bandastation/mobs/sound/pig_talk1.ogg', 'modular_bandastation/mobs/sound/pig_talk2.ogg')
 
-// =========== Зомби звуки ===========
-
-/datum/bt_node/ai_behavior/random_speech/zombie
-	sound = list('modular_bandastation/mobs/sound/zombie_idle1.ogg', 'modular_bandastation/mobs/sound/zombie_idle3.ogg')
-
-/datum/bt_node/ai_behavior/random_speech/zombie/fast
-	sound = list('modular_bandastation/mobs/sound/fast_zombie_idle1.ogg', 'modular_bandastation/mobs/sound/fast_zombie_idle2.ogg')
-
 // =========== ... ===========

@@ -34,6 +34,7 @@
 	remove_from_mob_list()
 	remove_from_dead_mob_list()
 	remove_from_alive_mob_list()
+	remove_from_current_living_antags()
 	remove_from_mob_suicide_list()
 	focus = null
 	if(length(progressbars))

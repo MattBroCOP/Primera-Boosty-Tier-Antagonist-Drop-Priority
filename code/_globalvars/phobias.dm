@@ -121,7 +121,7 @@ GLOBAL_LIST_INIT(phobia_mobs, list(
 		/mob/living/basic/shade,
 		/mob/living/basic/skeleton,
 		/mob/living/basic/wizard,
-		/mob/living/basic/zombie,
+		/mob/living/carbon/human/paradise_zombie_npc,
 		/mob/living/basic/bot/mulebot/paranormal,
 		/mob/living/basic/voidwalker,
 	)),

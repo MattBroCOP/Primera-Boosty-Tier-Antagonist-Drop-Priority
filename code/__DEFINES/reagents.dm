@@ -149,6 +149,8 @@
 #define REACTION_PH_VOL_CONSTANT (1<<4)
 ///If a reaction will generate its impure/inverse reagents in the middle of a reaction, as apposed to being determined on ingestion/on reaction completion
 #define REACTION_REAL_TIME_SPLIT (1<<5)
+/// Instant reactions whose original recipe yields are independent of reagent purity.
+#define REACTION_IGNORE_PURITY (1<<6)
 
 ///Used for overheat_temp - This sets the overheat so high it effectively has no overheat temperature.
 #define NO_OVERHEAT 99999

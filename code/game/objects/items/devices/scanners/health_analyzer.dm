@@ -182,9 +182,9 @@
 				render_list += "<span class='alert ml-1'>Субъект был превращён в хаска [conditional_tooltip("поглощением", "Необратимо. При обычных обстоятельствах оживление возможно только путём пересадки мозга.", tochat)].</span><br>"
 			else if(HAS_TRAIT_FROM(target, TRAIT_HUSK, SKELETON_TRAIT))
 				render_list += "<span class='alert ml-1'>Субъект был превращён в хаска вследствие значительной потери мягких тканей.</span><br>"
-			else if(HAS_TRAIT_FROM(target, TRAIT_HUSK, /datum/status_effect/zombie::id))
-				render_list += "<span class='alert ml-1'>Subject has been husked by [conditional_tooltip("zombification", \
-					"Surgically remove the source of the infection, typically located in the head. If no source is found, it is otherwise irreparable.", tochat)].</span><br>"
+			else if(HAS_TRAIT_FROM(target, TRAIT_HUSK, PARADISE_ZOMBIE_TRAIT))
+				render_list += "<span class='alert ml-1'>Субъект был превращён в хаска вследствие [conditional_tooltip("зомбификации", \
+					"Хирургически удалите источник инфекции, обычно расположенный в голове. Если источник не обнаружен, восстановление невозможно.", tochat)].</span><br>"
 			else if(!HAS_TRAIT_FROM(target, TRAIT_HUSK, BURN)) // prioritize showing unknown causes over burns
 				render_list += "<span class='alert ml-1'>Субъект был превращён в хаска по мистическим причинам.</span><br>"
 			else
@@ -463,7 +463,7 @@
 			<div class='ml-2'>\
 			Название: [disease.name].<br>\
 			Распространение: [disease.spread_text].<br>\
-			Stage: [disease.stage]/[disease.max_stages].<br>\
+			Стадия: [disease.stage]/[disease.max_stages].<br>\
 			Возможное лекарство: [cure_text]</div>\
 			</span>"
 
@@ -819,8 +819,8 @@
 			if(istype(disease, /datum/disease/advance))
 				var/datum/disease/advance/advanced_disease = disease
 				disease_cure = advanced_disease.generate_cure_text(1)
-			render += "<span class='alert ml-1'><b>Внимание: [disease.form] detected</b><br>\
-			<div class='ml-2'>Name: [disease.name].<br>Распространение: [disease.spread_text].<br>Стадия: [disease.stage]/[disease.max_stages].<br>Возможное лекарство: [disease_cure]</div>\
+			render += "<span class='alert ml-1'><b>Внимание: [disease.form] обнаружена</b><br>\
+			<div class='ml-2'>Название: [disease.name].<br>Распространение: [disease.spread_text].<br>Стадия: [disease.stage]/[disease.max_stages].<br>Возможное лекарство: [disease_cure]</div>\
 			</span>"
 
 	if(!length(render))

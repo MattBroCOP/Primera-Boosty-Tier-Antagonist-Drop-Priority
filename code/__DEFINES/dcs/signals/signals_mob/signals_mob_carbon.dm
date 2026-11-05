@@ -233,3 +233,6 @@
 #define COMSIG_END_DREAMING "end_dreaming"
 /// From /mob/living/carbon/item_coverage_changed: (added_slots, removed_slots)
 #define COMSIG_CARBON_ITEM_COVERAGE_CHANGED "carbon_item_coverage_changed"
+/// Sent before traumatic dismemberment (including chest evisceration): (obj/item/bodypart/limb).
+#define COMSIG_CARBON_PRE_DISMEMBER "carbon_pre_dismember"
+	#define COMPONENT_CANCEL_DISMEMBER (1<<0)

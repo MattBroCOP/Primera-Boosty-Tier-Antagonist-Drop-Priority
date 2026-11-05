@@ -7,7 +7,7 @@
 
 /mob/living/basic/bee
 	name = "bee"
-	desc = "Buzzy buzzy bee, stingy sti- Ouch!"
+	desc = "Жужжащая пчела с жалящим жа... Ай!"
 	icon_state = ""
 	icon_living = ""
 	icon = 'icons/mob/simple/bees.dmi'

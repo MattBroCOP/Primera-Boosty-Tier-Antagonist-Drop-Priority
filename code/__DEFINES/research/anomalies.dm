@@ -47,7 +47,7 @@ GLOBAL_LIST_INIT(bioscrambler_organs_blacklist, typecacheof(list (
 	/obj/item/organ/monster_core,
 	/obj/item/organ/tongue/dullahan,
 	/obj/item/organ/vocal_cords/colossus,
-	/obj/item/organ/zombie_infection,
+	/obj/item/organ/paradise_zombie_tumor,
 )))
 
 /// List of body parts we can apply to people

@@ -288,6 +288,8 @@ GLOBAL_VAR_INIT(focused_tests, focused_tests())
 		/atom/movable/looking_holder,
 		//Should not exist outside of holders
 		/obj/effect/decal/cleanable/blood/trail,
+		// Requires an active mutation action; ownerless residue deletes itself during Initialize.
+		/obj/effect/decal/cleanable/paradise_zombie_bile,
 		//Should not exist outside of ethereals
 		/obj/item/stock_parts/power_store/cell/ethereal,
 		/obj/item/hookah_mouthpiece, // BANDASTATION ADD - Shouldn't exist without a parent hookah

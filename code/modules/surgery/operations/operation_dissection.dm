@@ -77,7 +77,7 @@
 				reward /= 5
 			else if(isabductor(human_target))
 				reward *= 4
-			else if(isgolem(human_target) || human_target.has_status_effect(/datum/status_effect/zombie))
+			else if(isgolem(human_target) || HAS_TRAIT(human_target, TRAIT_PARADISE_ZOMBIE))
 				reward *= 3
 			else if(isjellyperson(human_target) || ispodperson(human_target))
 				reward *= 2

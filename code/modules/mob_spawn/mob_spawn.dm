@@ -189,7 +189,7 @@
 	if(LAZYFIND(ckeys_trying_to_spawn, user.ckey))
 		return
 	if(uses <= 0 && !infinite_use)
-		to_chat(user, span_warning("This spawner is out of charges!"))
+		to_chat(user, span_warning("В этой точке больше нельзя появиться!"))
 		return FALSE
 	if(!can_ghost_take(user))
 		return FALSE
@@ -201,17 +201,17 @@
 	var/prompt_fail = FALSE
 	var/apply_prefs = FALSE
 	if(prompt_ghost)
-		var/prompt = "Become [prompt_name]?"
+		var/prompt = "Принять роль «[prompt_name]»?"
 		if(!temp_body && user.can_reenter_corpse && user.mind)
-			prompt += " (Warning, You can no longer be revived!)"
-		prompt_fail = tgui_alert(user, prompt, buttons = list("Yes", "No"), timeout = 10 SECONDS) != "Yes"
+			prompt += " (Внимание: после этого вас больше нельзя будет воскресить!)"
+		prompt_fail = tgui_alert(user, prompt, buttons = list("Да", "Нет"), timeout = 10 SECONDS) != "Да"
 
 	var/species_pref = user.client.prefs.read_preference(/datum/preference/choiced/species) || /datum/species/human
 	if(!prompt_fail && user.started_as_observer && allow_custom_character && (GLOB.species_prototypes[species_pref].get_breath_type() == GAS_O2))
-		var/static_prompt = "Because you haven't taken a role so far, you may spawn in as \
-			[((allow_custom_character & GHOSTROLE_TAKE_PREFS_SPECIES) || species_pref == /datum/species/human) ? "" : "a human version of"] \
-			your customized character with a random name. Would you like to?"
-		apply_prefs = tgui_alert(user, static_prompt, "Custom Character", list("Yes", "No"), 10 SECONDS) == "Yes"
+		var/static_prompt = "Вы ещё не брали ни одной роли. Хотите появиться в облике своего настроенного персонажа \
+			[((allow_custom_character & GHOSTROLE_TAKE_PREFS_SPECIES) || species_pref == /datum/species/human) ? "" : "в его человеческом варианте "]\
+			со случайным именем?"
+		apply_prefs = tgui_alert(user, static_prompt, "Ваш персонаж", list("Да", "Нет"), 10 SECONDS) == "Да"
 
 	if(!prompt_fail && !pre_ghost_take(user))
 		prompt_fail = TRUE
@@ -229,10 +229,10 @@
 /// Checks if a ghost can take this ghost role.
 /obj/effect/mob_spawn/ghost_role/proc/can_ghost_take(mob/dead/observer/user)
 	if(is_banned_from(user.ckey, role_ban))
-		to_chat(user, span_warning("You are banned from this role!"))
+		to_chat(user, span_warning("Вам запрещено брать эту роль!"))
 		return FALSE
 	if(!(GLOB.ghost_role_flags & GHOSTROLE_SPAWNER) && !(flags_1 & ADMIN_SPAWNED_1))
-		to_chat(user, span_warning("An admin has temporarily disabled non-admin ghost roles!"))
+		to_chat(user, span_warning("Администратор временно отключил роли призраков, созданные не администраторами!"))
 		return FALSE
 	if(QDELETED(src) || QDELETED(user))
 		return FALSE

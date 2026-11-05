@@ -147,7 +147,7 @@
 	var/mob/living/carbon/human/affected_human = affected_mob
 	affected_human.set_facial_hairstyle("Shaved", update = FALSE)
 	affected_human.set_hairstyle("Bald", update = FALSE)
-	affected_mob.become_husk(/datum/status_effect/zombie::id)
+	affected_mob.become_husk(PARADISE_ZOMBIE_TRAIT)
 
 	if(affected_mob.adjust_brute_loss(25, updating_health = FALSE, required_bodytype = affected_bodytype)) // holy shit your skin just FELL THE FUCK OFF
 		return UPDATE_MOB_HEALTH

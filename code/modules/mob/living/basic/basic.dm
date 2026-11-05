@@ -224,7 +224,7 @@
 	. = ..()
 	if(stat != DEAD)
 		return
-	. += span_deadsay("Upon closer examination, [p_they()] appear[p_s()] to be [HAS_MIND_TRAIT(user, TRAIT_NAIVE) ? "asleep" : "dead"].")
+	. += span_deadsay("При ближайшем рассмотрении [HAS_MIND_TRAIT(user, TRAIT_NAIVE) ? "всё указывает на обычный сон" : "признаков жизни не видно"].")
 
 /mob/living/basic/proc/melee_attack(atom/target, list/modifiers, ignore_cooldown = FALSE)
 	var/early_melee_result = early_melee_attack(target, modifiers, ignore_cooldown)

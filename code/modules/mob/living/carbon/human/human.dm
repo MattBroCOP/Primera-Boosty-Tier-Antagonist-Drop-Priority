@@ -22,6 +22,7 @@
 
 	. = ..()
 
+	AddComponent(/datum/component/paradise_corpse_decay)
 	AddComponent(/datum/component/personal_crafting, ui_human_crafting)
 	AddElement(/datum/element/footstep, FOOTSTEP_MOB_HUMAN, 1, -6)
 	AddComponent(/datum/component/bloodysoles/feet)

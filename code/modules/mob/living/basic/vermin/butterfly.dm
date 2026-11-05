@@ -1,6 +1,6 @@
 /mob/living/basic/butterfly
 	name = "butterfly"
-	desc = "A colorful butterfly, how'd it get up here?"
+	desc = "Яркая бабочка. Как она сюда попала?"
 	icon_state = "butterfly"
 	icon_living = "butterfly"
 	icon_dead = "butterfly_dead"

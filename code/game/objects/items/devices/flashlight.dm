@@ -134,8 +134,8 @@
 
 	var/obj/item/organ/eyes/eyes = patient.get_organ_slot(ORGAN_SLOT_EYES)
 	var/obj/item/organ/brain = patient.get_organ_slot(ORGAN_SLOT_BRAIN)
-	var/obj/item/organ/zombie_infection/tumor = patient.get_organ_slot(ORGAN_SLOT_ZOMBIE) //this slot only ever holds zombie tumors, so we can just check if this exists
-	var/braaaainz = tumor?.causes_damage //prevents steath tumors (admin bullshittery or romerol) from showing up to preserve stealthiness
+	var/obj/item/organ/paradise_zombie_tumor/tumor = patient.get_organ_slot(ORGAN_SLOT_ZOMBIE)
+	var/braaaainz = !isnull(tumor)
 	if(!eyes)
 		to_chat(user, span_warning("[patient] doesn't have any eyes!"))
 		return
@@ -167,7 +167,7 @@
 		if(eyes.penlight_message != /obj/item/organ/eyes::penlight_message) //prevent default eyes from cluttering text, if this still happens somehow it displays "default message please report"
 			. += span_notice_ml("[eyes.penlight_examine(user, src)]\n")
 		if(braaaainz)
-			. += span_danger_ml("<b>[patient.p_Their()] eyes are webbed by fibrous black tendrils!</b>\n")
+			. += span_danger_ml("<b>Глаза [patient.declent_ru(GENITIVE)] оплетены чёрными волокнистыми отростками!</b>\n")
 		if(patient.has_status_effect(/datum/status_effect/drugginess) || patient.has_status_effect(/datum/status_effect/trance))
 			. += span_danger_ml("[patient.p_Their()] [eyes.pupils_name] are responsive, but entirely unfocused.")
 		if(patient.has_status_effect(/datum/status_effect/stoned))

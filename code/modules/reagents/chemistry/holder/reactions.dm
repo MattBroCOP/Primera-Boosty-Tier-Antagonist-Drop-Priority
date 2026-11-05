@@ -225,7 +225,7 @@
 		return FALSE
 
 	//average purity to be used in scaling the yield of products formed
-	var/average_purity = get_average_purity()
+	var/average_purity = (selected_reaction.reaction_flags & REACTION_IGNORE_PURITY) ? 1 : get_average_purity()
 
 	//remove the required reagents
 	for(var/datum/reagent/requirement as anything in cached_required_reagents)//this is not an object

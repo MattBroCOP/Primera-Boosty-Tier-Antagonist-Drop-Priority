@@ -28,10 +28,13 @@ function formToColor(form: string) {
     case 'symptom':
       return 'lightgreen';
     case 'condition':
+    case 'патология':
     case 'infection':
+    case 'инфекция':
     case 'parasite':
       return 'lightsalmon';
     case 'virus':
+    case 'вирусная инфекция':
     case 'bacteria':
     case 'fungus':
       return 'lightblue';
@@ -45,9 +48,9 @@ function formatSpreadBy(spread_by: string) {
     case 'airborne':
       return (
         <Stack align="end">
-          <Stack.Item>Airborne</Stack.Item>
+          <Stack.Item>Воздушно-капельный</Stack.Item>
           <Stack.Item fontSize="10px" pb={0.2}>
-            (e.g. coughing, sneezing)
+            (кашель, чихание)
           </Stack.Item>
         </Stack>
       );
@@ -55,36 +58,37 @@ function formatSpreadBy(spread_by: string) {
     case 'contact':
       return (
         <Stack align="end">
-          <Stack.Item>Contact</Stack.Item>
+          <Stack.Item>Контакт</Stack.Item>
           <Stack.Item fontSize="10px" pb={0.2}>
-            (e.g. touching infected persons)
+            (касание заражённых)
           </Stack.Item>
         </Stack>
       );
     case 'fluid contact':
       return (
         <Stack align="end">
-          <Stack.Item>Liquids</Stack.Item>
+          <Stack.Item>Жидкости</Stack.Item>
           <Stack.Item fontSize="10px" pb={0.2}>
-            (e.g. touching contaminated fluids)
+            (контакт с заражёнными жидкостями)
           </Stack.Item>
         </Stack>
       );
     case 'blood':
       return (
         <Stack align="end">
-          <Stack.Item>Blood</Stack.Item>
+          <Stack.Item>Кровь</Stack.Item>
           <Stack.Item fontSize="10px" pb={0.2}>
-            (e.g. tranfusion of infected blood)
+            (переливание заражённой крови)
           </Stack.Item>
         </Stack>
       );
     case 'none':
+    case 'не передаётся':
       return (
         <Stack align="end">
-          <Stack.Item>None</Stack.Item>
+          <Stack.Item>Не передаётся</Stack.Item>
           <Stack.Item fontSize="10px" pb={0.2}>
-            (non-contagious)
+            (незаразно)
           </Stack.Item>
         </Stack>
       );
@@ -138,7 +142,7 @@ function renderDSMEntry(entry: BookEntry<Disease>) {
         <Stack align="end">
           <Stack.Item grow>{entry.name}</Stack.Item>
           <Stack.Item italic fontSize="10px" pb={0.2} pr={0.5}>
-            ({entry.form})
+            ({isSymptom(entry) ? 'Симптом' : entry.form})
           </Stack.Item>
         </Stack>
       }
@@ -148,20 +152,20 @@ function renderDSMEntry(entry: BookEntry<Disease>) {
           <>
             <Stack.Item>
               <Box inline color="label">
-                Description:
+                Описание:
               </Box>{' '}
               {entry.desc}
             </Stack.Item>
             <Stack.Item>
               <Box inline color="label">
-                Level:
+                Уровень:
               </Box>{' '}
               {entry.level}
             </Stack.Item>
             {entry.illness !== 'Unidentified' && (
               <Stack.Item>
                 <Box inline color="label">
-                  Common associated illness:
+                  Характерное заболевание:
                 </Box>{' '}
                 "{entry.illness}"
               </Stack.Item>
@@ -169,7 +173,7 @@ function renderDSMEntry(entry: BookEntry<Disease>) {
             {!!entry.cured_by && (
               <Stack.Item>
                 <Box inline color="label">
-                  Common cures:
+                  Обычные средства лечения:
                 </Box>{' '}
                 {entry.cured_by}
               </Stack.Item>
@@ -179,25 +183,25 @@ function renderDSMEntry(entry: BookEntry<Disease>) {
           <>
             <Stack.Item>
               <Box inline color="label">
-                Agent:
+                Возбудитель:
               </Box>{' '}
               {entry.agent}
             </Stack.Item>
             <Stack.Item>
               <Box inline color="label">
-                Description:
+                Описание:
               </Box>{' '}
               {entry.desc}
             </Stack.Item>
             <Stack.Item>
               <Box inline color="label">
-                Spread By:
+                Путь передачи:
               </Box>{' '}
               <Box inline>{formatSpreadBy(entry.spread_by)}</Box>
             </Stack.Item>
             <Stack.Item>
               <Box inline color="label">
-                Cured By:
+                Лечение:
               </Box>{' '}
               {entry.cured_by}
             </Stack.Item>
@@ -223,7 +227,7 @@ function renderTOCEntry(tocentry: TOCEntry<Disease>) {
         }}
         pb={0.2}
       >
-        ({tocentry.entry.form})
+        ({isSymptom(tocentry.entry) ? 'Симптом' : tocentry.entry.form})
       </Stack.Item>
     </Stack>
   );

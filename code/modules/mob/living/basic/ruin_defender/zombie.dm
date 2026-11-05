@@ -1,87 +1,55 @@
-/// Everyone knows what a zombie is
-/mob/living/basic/zombie
-	name = "Shambling Corpse"
-	desc = "When there is no more room in hell, the dead will walk in outer space."
-	icon = 'icons/mob/simple/simple_human.dmi'
-	mob_biotypes = MOB_ORGANIC|MOB_HUMANOID
-	sentience_type = SENTIENCE_HUMANOID
-	maxHealth = 100
-	health = 100
-	melee_damage_lower = 21
-	melee_damage_upper = 21
-	attack_verb_continuous = "bites"
-	attack_verb_simple = "bite"
-	attack_sound = 'sound/effects/hallucinations/growl1.ogg'
-	attack_vis_effect = ATTACK_EFFECT_BITE
-	combat_mode = TRUE
-	speed = 4
-	status_flags = CANPUSH | CANSTUN
-	death_message = "rapidly decays into a pile of bones!"
-	unsuitable_atmos_damage = 0
-	unsuitable_cold_damage = 0
+/** A mapped corpse uses the same body, infection and resurrection as infected crewmembers. */
+/mob/living/carbon/human/paradise_zombie_npc
+	name = "Бредущий труп"
+	real_name = "Бредущий труп"
+	desc = "Когда в аду больше не останется места, мёртвые выйдут в открытый космос."
 	faction = list(FACTION_HOSTILE)
-	basic_mob_flags = DEL_ON_DEATH
-	ai_controller = /datum/ai_controller/basic_controller/zombie
-	/// Outfit the zombie spawns with for visuals.
+	/// Clothes previously rendered by the basic zombie, now worn by its real human body.
 	var/outfit = /datum/outfit/corpse_doctor
-	/// Chance to spread zombieism on hit
-	/// Only for admins because we don't actually want romerol to get into the round from space ruins generally speaking
-	var/infection_chance = 0
+	/// The sound variants retained by the mapped corpses.
+	var/list/zombie_damaged_sounds
 
-/mob/living/basic/zombie/Initialize(mapload)
+/mob/living/carbon/human/paradise_zombie_npc/Initialize(mapload)
 	. = ..()
-	apply_dynamic_human_appearance(src, outfit, /datum/species/zombie, bloody_slots = ITEM_SLOT_OCLOTHING)
-	AddElement(/datum/element/death_drops, /obj/effect/decal/remains/human)
+	real_name = name
+	equipOutfit(outfit)
+	add_blood_DNA_to_items(get_blood_dna_list(), ITEM_SLOT_OCLOTHING)
+	mind_initialize()
+	ADD_TRAIT(src, TRAIT_PARADISE_NPC_ZOMBIE, INNATE_TRAIT)
+	// Space-ruin corpses were noninfectious; admins can remove this existing plague trait.
+	ADD_TRAIT(src, TRAIT_PARADISE_NON_INFECTIOUS_ZOMBIE, INNATE_TRAIT)
+	var/datum/disease/paradise_zombie/infection = new()
+	infection.infect(src, FALSE)
+	infection.stage = 8
+	infection.process_infection_cycle()
+	RegisterSignal(src, COMSIG_MOB_AFTER_APPLY_DAMAGE, PROC_REF(on_zombie_damage))
 
-/mob/living/basic/zombie/get_unconscious_appearance()
-	return get_generic_humanoid_static_appearance()
+/mob/living/carbon/human/paradise_zombie_npc/proc/on_zombie_damage(datum/source, damage, damage_type)
+	SIGNAL_HANDLER
+	if(HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE) && damage > 0 && (damage_type in list(BRUTE, BURN)) && length(zombie_damaged_sounds))
+		playsound(src, pick(zombie_damaged_sounds), 75, TRUE)
 
-/mob/living/basic/zombie/melee_attack(atom/target, list/modifiers, ignore_cooldown)
-	. = ..()
-	if (!. || !infection_chance || !ishuman(target) || !prob(infection_chance))
-		return
-	try_to_zombie_infect(target)
+/** Preserve map and admin spawn paths without creating an intermediate basic mob or replacing player references. */
+/mob/living/basic/zombie
+	parent_type = /mob/living/carbon/human/paradise_zombie_npc
 
-/// Weaker variant used if you want to put more of them in one place, won't attack obstacles
 /mob/living/basic/zombie/rotten
-	name = "Rotting Carcass"
-	desc = "This undead fiend looks to be badly decomposed."
-	health = 60
-	melee_damage_lower = 11
-	melee_damage_upper = 11
-	ai_controller = /datum/ai_controller/basic_controller/zombie/stupid
+	name = "Гниющий труп"
+	desc = "Эта нежить находится на поздней стадии разложения."
 
 /mob/living/basic/zombie/rotten/assistant
 	outfit = /datum/outfit/corpse_assistant
 
 /datum/outfit/corpse_doctor
-	name = "Corpse Doctor"
+	name = "Труп врача"
 	suit = /obj/item/clothing/suit/toggle/labcoat
 	uniform = /obj/item/clothing/under/rank/medical/doctor
 	shoes = /obj/item/clothing/shoes/sneakers/white
 	back = /obj/item/storage/backpack/medic
 
 /datum/outfit/corpse_assistant
-	name = "Corpse Assistant"
+	name = "Труп ассистента"
 	mask = /obj/item/clothing/mask/gas
 	uniform = /obj/item/clothing/under/color/grey
 	shoes = /obj/item/clothing/shoes/sneakers/black
 	back = /obj/item/storage/backpack
-
-/datum/ai_controller/basic_controller/zombie
-	behavior_tree_json = "code/modules/mob/living/basic/ruin_defender/zombie.bt.json"
-	blackboard = list(
-		BB_TARGET_MINIMUM_STAT = HARD_CRIT,
-		BB_TARGETING_STRATEGY = /datum/targeting_strategy/basic,
-		BB_BASIC_MOB_SPEAK_LINES = list(
-			BB_EMOTE_HEAR = list("groans.", "moans.", "grunts."),
-			BB_EMOTE_SEE = list("twitches.", "shudders."),
-			BB_SPEAK_CHANCE = 3,
-		),
-	)
-
-	ai_movement = /datum/ai_movement/basic_avoidance
-
-
-/datum/ai_controller/basic_controller/zombie/stupid
-	behavior_tree_json = "code/modules/mob/living/basic/ruin_defender/zombie_stupid.bt.json"
