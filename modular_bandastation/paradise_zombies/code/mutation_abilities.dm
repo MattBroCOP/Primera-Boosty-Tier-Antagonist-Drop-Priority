@@ -470,11 +470,11 @@
 	user.visible_message(span_userdanger("Желчный узел [user] раздувается и готовится взорваться!"), span_userdanger("Наш желчный узел раздувается!"))
 	user.balloon_alert_to_viewers("готовится взорваться!")
 	playsound(user, 'sound/misc/moist_impact.ogg', 60, TRUE)
-	var/completed = do_after(user, 2 SECONDS, target = user)
+	var/completed = do_after(user, 2 SECONDS, target = user, timed_action_flags = IGNORE_USER_LOC_CHANGE)
 	if(QDELETED(src))
 		return FALSE
 	priming = FALSE
-	var/can_detonate = completed && !ruptured && is_active() && !QDELETED(nodule) && !IS_UNCONSCIOUS_OR_CRIT(user)
+	var/can_detonate = completed && !ruptured && is_active() && !QDELETED(nodule) && !IS_UNCONSCIOUS_OR_CRIT(user) && isturf(user.loc)
 	QDEL_NULL(nodule)
 	if(!can_detonate)
 		return FALSE

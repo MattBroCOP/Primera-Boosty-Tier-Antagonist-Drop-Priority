@@ -586,6 +586,8 @@
 	if(HAS_TRAIT(src, TRAIT_HULK))
 		say(pick(";RAAAAAAAARGH!", ";HNNNNNNNNNGGGGGGH!", ";GWAAAAAAAARRRHHH!", "NNNNNNNNGGGGGGGGHH!", ";AAAAAAARRRGH!" ), forced = "hulk")
 		. = ..(cuffs, cuff_break = FAST_CUFFBREAK)
+	else if(HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE))
+		. = ..(cuffs, cuff_break = FAST_CUFFBREAK)
 	else
 		. = ..()
 
@@ -638,6 +640,8 @@
 //Turns a mob black, flashes a skeleton overlay
 //Just like a cartoon!
 /mob/living/carbon/human/proc/electrocution_animation(anim_duration)
+	if(SEND_SIGNAL(src, COMSIG_HUMAN_ELECTROCUTION_ANIMATION, anim_duration) & COMPONENT_BLOCK_ELECTROCUTION_ANIMATION)
+		return
 	var/mutable_appearance/zap_appearance
 
 	// If we have a species, we need to handle mutant parts and stuff

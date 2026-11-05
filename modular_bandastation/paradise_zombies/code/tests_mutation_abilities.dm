@@ -35,7 +35,7 @@
 	previous_range_area = null
 	return .
 
-/// Only the four long-range scenarios allocate a floor; supporting outbreak bodies stay in the unit room.
+/// Ability ranges keep supporting outbreak bodies in the unit room.
 /datum/unit_test/paradise_zombie_mutation_ability_test/proc/prepare_range(mob/living/carbon/human/host, offset = 1)
 	range_reservation = SSmapping.request_turf_block_reservation(17, 17, turf_type_override = /turf/open/indestructible)
 	TEST_ASSERT_NOTNULL(range_reservation, "The private ability range could not be reserved.")
@@ -424,8 +424,10 @@
 /datum/unit_test/paradise_zombie_mutation_nodule_counterplay/Run()
 	var/mob/living/carbon/human/host = make_mutant("exploder")
 	TEST_ASSERT_NOTNULL(host, "The Exploder fixture was not created.")
+	TEST_ASSERT(prepare_range(host, offset = 8), "The moving counterplay fixture has no private range.")
 	// Restore a real windup window instead of the consistent fixture's instant do_after modifier.
-	host.add_or_update_variable_actionspeed_modifier(/datum/actionspeed_modifier/base, multiplicative_slowdown = 0.1)
+	host.mob_mood.set_enabled(FALSE)
+	host.add_or_update_variable_actionspeed_modifier(/datum/actionspeed_modifier/base, multiplicative_slowdown = 1)
 	var/datum/action/cooldown/paradise_zombie_mutation/explode/action = locate() in host.actions
 	TEST_ASSERT_NOTNULL(action, "Exploder did not receive its detonation action.")
 	var/mob/living/carbon/human/shooter = allocate(/mob/living/carbon/human/consistent)
@@ -433,6 +435,7 @@
 	INVOKE_ASYNC(action, TYPE_PROC_REF(/datum/action/cooldown, Trigger), host)
 	var/obj/structure/paradise_zombie_mutation_nodule/nodule = action.nodule
 	TEST_ASSERT_NOTNULL(nodule, "The real detonation windup did not expose its targetable nodule.")
+	TEST_ASSERT(host.Move(get_step(host, EAST), EAST), "The priming Exploder could not walk toward its attacker.")
 	TEST_ASSERT_EQUAL(get_turf(nodule), get_turf(host), "The targetable nodule was detached from the caster's location.")
 	var/health_before = host.get_brute_loss()
 	var/obj/projectile/bullet/shot = allocate(/obj/projectile/bullet, get_turf(shooter))
@@ -450,6 +453,51 @@
 	TEST_ASSERT(host.stat != DEAD, "A ruptured nodule still allowed the suicide blast to execute.")
 	TEST_ASSERT(action.next_use_time > world.time, "Nodule counterplay refunded the attempted detonation's cooldown.")
 	TEST_ASSERT_EQUAL(length(action.owned_effects), 0, "Interrupted detonation retained its exposed weak point.")
+
+/// Movement keeps the real windup running; entering a container still prevents its blast.
+/datum/unit_test/paradise_zombie_mutation_detonation_movement
+	parent_type = /datum/unit_test/paradise_zombie_mutation_ability_test
+	var/enter_container = FALSE
+	var/cast_finished = FALSE
+	var/cast_succeeded = FALSE
+
+/datum/unit_test/paradise_zombie_mutation_detonation_movement/contained
+	enter_container = TRUE
+
+/datum/unit_test/paradise_zombie_mutation_detonation_movement/proc/cast(datum/action/cooldown/paradise_zombie_mutation/explode/action, mob/living/carbon/human/host)
+	cast_succeeded = action.Trigger(host)
+	cast_finished = TRUE
+
+/datum/unit_test/paradise_zombie_mutation_detonation_movement/Run()
+	var/mob/living/carbon/human/host = make_mutant("exploder")
+	TEST_ASSERT_NOTNULL(host, "The moving Exploder fixture was not created.")
+	TEST_ASSERT(prepare_range(host, offset = 8), "The moving Exploder has no private range.")
+	host.mob_mood.set_enabled(FALSE)
+	host.add_or_update_variable_actionspeed_modifier(/datum/actionspeed_modifier/base, multiplicative_slowdown = 1)
+	var/datum/action/cooldown/paradise_zombie_mutation/explode/action = locate() in host.actions
+	TEST_ASSERT_NOTNULL(action, "The moving Exploder lacks its real action.")
+	var/started_at = world.time
+	INVOKE_ASYNC(src, TYPE_PROC_REF(/datum/unit_test/paradise_zombie_mutation_detonation_movement, cast), action, host)
+	TEST_ASSERT(action.priming && !QDELETED(action.nodule), "The real two-second windup never began.")
+	TEST_ASSERT(host.Move(get_step(host, EAST), EAST), "The priming Exploder could not walk.")
+	TEST_ASSERT_EQUAL(get_turf(action.nodule), get_turf(host), "The moving Exploder abandoned its targetable nodule.")
+	if(enter_container)
+		var/obj/structure/closet/container = allocate(/obj/structure/closet, get_turf(host))
+		host.forceMove(container)
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent, get_turf(host))
+	var/deadline = started_at + 4 SECONDS
+	UNTIL(cast_finished || world.time >= deadline)
+	TEST_ASSERT(cast_finished, "The moving detonation never resolved.")
+	TEST_ASSERT(world.time >= started_at + 2 SECONDS, "The moving detonation skipped its two-second windup.")
+	if(enter_container)
+		TEST_ASSERT(!cast_succeeded && host.stat != DEAD, "Entering a container still allowed the suicide blast.")
+		TEST_ASSERT_EQUAL(victim.get_brute_loss(), 0, "A container-aborted blast damaged its neighbour.")
+	else
+		TEST_ASSERT(cast_succeeded && host.stat == DEAD, "Walking interrupted the detonation.")
+		TEST_ASSERT_EQUAL(victim.get_brute_loss(), 60, "The blast did not use the caster's new location as its centre.")
+	TEST_ASSERT_NULL(action.nodule, "The completed windup left its nodule behind.")
+	TEST_ASSERT_EQUAL(length(action.owned_effects), 0, "The completed windup retained temporary effects.")
+	TEST_ASSERT(action.next_use_time > world.time, "The attempted detonation refunded its cooldown.")
 
 /// Completing the real telegraph harms enemies, spares infected allies and leaves an ordinary curable corpse.
 /datum/unit_test/paradise_zombie_mutation_detonation

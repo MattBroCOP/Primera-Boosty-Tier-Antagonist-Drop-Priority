@@ -30,11 +30,13 @@
 	RegisterSignals(parent, list(COMSIG_MOB_MIND_INITIALIZED, COMSIG_MOB_MIND_TRANSFERRED_INTO), PROC_REF(on_mind_arrived))
 	RegisterSignal(parent, COMSIG_MOB_EQUIPPED_ITEM, PROC_REF(on_item_equipped))
 	RegisterSignal(parent, COMSIG_HUMAN_EQUIPPING_ITEM, PROC_REF(on_equipping_item))
+	RegisterSignals(parent, list(COMSIG_CARBON_CUFF_ATTEMPTED, COMSIG_CARBON_PRE_CUFF_APPLY), PROC_REF(on_cuff_attempt))
+	RegisterSignal(parent, COMSIG_CARBON_PRE_CALTROP_STUN, PROC_REF(on_caltrop_stun))
 	on_mind_arrived()
 
 /datum/component/paradise_zombie_mutation/UnregisterFromParent()
 	stop_mutation_visuals()
-	UnregisterSignal(parent, list(COMSIG_MOB_MIND_INITIALIZED, COMSIG_MOB_MIND_TRANSFERRED_INTO, COMSIG_MOB_EQUIPPED_ITEM, COMSIG_HUMAN_EQUIPPING_ITEM))
+	UnregisterSignal(parent, list(COMSIG_MOB_MIND_INITIALIZED, COMSIG_MOB_MIND_TRANSFERRED_INTO, COMSIG_MOB_EQUIPPED_ITEM, COMSIG_HUMAN_EQUIPPING_ITEM, COMSIG_CARBON_CUFF_ATTEMPTED, COMSIG_CARBON_PRE_CUFF_APPLY, COMSIG_CARBON_PRE_CALTROP_STUN))
 	QDEL_NULL(selection_action)
 	clear_form()
 	GLOB.paradise_zombie_mutation_progression.release_body(parent)
@@ -107,13 +109,13 @@
 	mutating = TRUE
 	var/datum/mind/choosing_mind = host.mind
 	mutation_visual_active = TRUE
-	RegisterSignals(host, list(COMSIG_MOVABLE_MOVED, COMSIG_LIVING_DEATH, COMSIG_MOB_MIND_TRANSFERRED_OUT_OF), PROC_REF(stop_mutation_visuals))
+	RegisterSignals(host, list(COMSIG_LIVING_DEATH, COMSIG_MOB_MIND_TRANSFERRED_OUT_OF), PROC_REF(stop_mutation_visuals))
 	// Relative steps cancel out on the server while the client visibly swells and contracts.
 	animate(host, transform = matrix().Scale(1.5), time = 0.5 SECONDS, loop = -1, flags = ANIMATION_RELATIVE|ANIMATION_PARALLEL, tag = PARADISE_ZOMBIE_MUTATION_ANIMATION_TAG)
 	animate(transform = matrix().Scale(1 / 1.5), time = 0.5 SECONDS, flags = ANIMATION_RELATIVE)
 	playsound(host, 'sound/effects/wounds/crack1.ogg', 60, TRUE)
 	host.visible_message(span_warning("Тело [host] начинает болезненно перестраиваться!"))
-	var/completed = do_after(host, 6 SECONDS, target = host)
+	var/completed = do_after(host, 6 SECONDS, target = host, timed_action_flags = IGNORE_USER_LOC_CHANGE)
 	if(QDELETED(src))
 		return FALSE
 	var/visual_was_active = mutation_visual_active
@@ -135,7 +137,7 @@
 	if(!mutation_visual_active)
 		return
 	mutation_visual_active = FALSE
-	UnregisterSignal(parent, list(COMSIG_MOVABLE_MOVED, COMSIG_LIVING_DEATH, COMSIG_MOB_MIND_TRANSFERRED_OUT_OF))
+	UnregisterSignal(parent, list(COMSIG_LIVING_DEATH, COMSIG_MOB_MIND_TRANSFERRED_OUT_OF))
 	if(!QDELETED(parent))
 		animate(parent, tag = PARADISE_ZOMBIE_MUTATION_ANIMATION_TAG)
 
@@ -162,6 +164,7 @@
 		clear_form()
 		GLOB.paradise_zombie_mutation_progression.release_body(host)
 		return FALSE
+	ADD_TRAIT(host, TRAIT_NO_SLIP_ALL, REF(src))
 	applied_health_bonus = max(chosen.health_bonus, 30 - host.maxHealth)
 	host.setMaxHealth(host.maxHealth + applied_health_bonus)
 	host.updatehealth()
@@ -184,6 +187,7 @@
 	QDEL_NULL(body_renderer)
 	var/mob/living/carbon/human/host = parent
 	if(!QDELETED(host))
+		REMOVE_TRAIT(host, TRAIT_NO_SLIP_ALL, REF(src))
 		for(var/obj/item/paradise_zombie_claw/claw in host.get_held_items())
 			qdel(claw.GetComponent(/datum/component/paradise_zombie_mutation_claws))
 		host.remove_movespeed_modifier(/datum/movespeed_modifier/paradise_zombie_mutation)
@@ -204,8 +208,18 @@
 
 /datum/component/paradise_zombie_mutation/proc/on_equipping_item(mob/living/carbon/human/host, obj/item/item, slot)
 	SIGNAL_HANDLER
-	if(form && !(slot & (ITEM_SLOT_HANDS|ITEM_SLOT_HANDCUFFED|ITEM_SLOT_LEGCUFFED)))
+	if(form && !(slot & (ITEM_SLOT_HANDS|ITEM_SLOT_LEGCUFFED)))
 		return COMPONENT_BLOCK_EQUIP
+
+/datum/component/paradise_zombie_mutation/proc/on_cuff_attempt()
+	SIGNAL_HANDLER
+	if(form)
+		return COMSIG_CARBON_CUFF_PREVENT
+
+/datum/component/paradise_zombie_mutation/proc/on_caltrop_stun()
+	SIGNAL_HANDLER
+	if(form)
+		return COMPONENT_BLOCK_CALTROP_STUN
 
 /datum/action/cooldown/paradise_zombie_choose_mutation
 	name = "Мутация чумы"

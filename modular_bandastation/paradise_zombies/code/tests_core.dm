@@ -253,3 +253,85 @@
 	tumor.Remove(patient)
 	TEST_ASSERT_EQUAL(arm.GetComponent(/datum/component/paradise_zombie_limb), necrosis, "Tumor extraction deleted unrelated transplanted necrosis.")
 	TEST_ASSERT(necrosis.necrotic && arm.bodypart_disabled, "Tumor extraction healed unrelated transplanted necrosis.")
+
+#ifdef UNIT_TESTS
+
+/** Cursed still scatters an ordinary corpse, but never removes a mature zombie's physical limbs. */
+/datum/unit_test/paradise_zombie_cursed_death
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+
+/datum/unit_test/paradise_zombie_cursed_death/Run()
+	for(var/scenario in list("zombie", "human", "cured"))
+		var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
+		patient.mind_initialize()
+		TEST_ASSERT(patient.add_quirk(/datum/quirk/cursed), "The [scenario] fixture could not acquire the real Cursed quirk.")
+		if(scenario != "human")
+			var/datum/disease/paradise_zombie/infection = new()
+			infection.infect(patient, FALSE)
+			infection.stage = 8
+			infection.process_infection_cycle()
+			if(scenario == "cured")
+				infection.cure()
+		var/list/original_limbs = patient.get_bodyparts()
+		original_limbs = original_limbs.Copy()
+		patient.death()
+		TEST_ASSERT_EQUAL(patient.stat, DEAD, "The [scenario] fixture did not enter actual death.")
+		if(scenario == "zombie")
+			TEST_ASSERT_EQUAL(length(patient.get_bodyparts()), length(original_limbs), "Cursed scattered a mature zombie's limbs on death.")
+			for(var/obj/item/bodypart/limb as anything in original_limbs)
+				TEST_ASSERT_EQUAL(limb.owner, patient, "Cursed detached an original zombie limb without changing the bodypart count.")
+		else
+			TEST_ASSERT(length(patient.get_bodyparts()) < length(original_limbs), "The [scenario] control retained zombie-only protection from Cursed limb scattering.")
+
+/** The native resist action breaks a zombie's cuffs in five real seconds, cancels on movement and resets on cure. */
+/datum/unit_test/paradise_zombie_cuff_escape
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+	var/escape_finished = FALSE
+	var/escape_finished_at
+
+/datum/unit_test/paradise_zombie_cuff_escape/proc/resist_cuffs(mob/living/carbon/human/host)
+	escape_finished = FALSE
+	host.resist_restraints()
+	escape_finished_at = world.time
+	escape_finished = TRUE
+
+/datum/unit_test/paradise_zombie_cuff_escape/Run()
+	var/mob/living/carbon/human/host = make_zombie(run_loc_floor_bottom_left)
+	host.mob_mood.set_enabled(FALSE)
+	host.add_or_update_variable_actionspeed_modifier(/datum/actionspeed_modifier/base, multiplicative_slowdown = 1)
+	var/mob/living/carbon/human/officer = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
+	var/obj/item/restraints/handcuffs/cuffs = allocate(/obj/item/restraints/handcuffs)
+	TEST_ASSERT(officer.put_in_active_hand(cuffs), "The ordinary cuff fixture could not hold its handcuffs.")
+	click_wrapper(officer, host)
+	TEST_ASSERT_EQUAL(host.handcuffed, cuffs, "A lower zombie could not be restrained through the real cuff attack.")
+	INVOKE_ASYNC(src, PROC_REF(resist_cuffs), host)
+	sleep(1 SECONDS)
+	TEST_ASSERT(!escape_finished && host.handcuffed == cuffs, "A zombie escaped before its native five-second breakout.")
+	TEST_ASSERT(host.Move(get_step(host, EAST), EAST), "The restrained zombie could not perform its cancelling movement.")
+	var/deadline = world.time + 1 SECONDS
+	UNTIL(escape_finished || world.time >= deadline)
+	TEST_ASSERT(escape_finished && host.handcuffed == cuffs && !QDELETED(cuffs), "Movement failed to cancel the native cuff breakout.")
+	var/started_at = world.time
+	INVOKE_ASYNC(src, PROC_REF(resist_cuffs), host)
+	sleep(4 SECONDS)
+	if(world.time < started_at + 5 SECONDS)
+		TEST_ASSERT(!escape_finished && host.handcuffed == cuffs, "The retry broke cuffs before five real seconds elapsed.")
+	deadline = started_at + 6 SECONDS
+	UNTIL(escape_finished || world.time >= deadline)
+	TEST_ASSERT(escape_finished && escape_finished_at >= started_at + 5 SECONDS, "The native five-second cuff retry did not finish within its expected boundary.")
+	TEST_ASSERT(QDELETED(cuffs) && !host.handcuffed, "A successful zombie breakout did not destroy and unequip the real cuffs.")
+	var/datum/disease/paradise_zombie/infection = locate() in host.diseases
+	infection.cure()
+	cuffs = allocate(/obj/item/restraints/handcuffs)
+	TEST_ASSERT(officer.put_in_active_hand(cuffs), "The cured control could not receive fresh handcuffs.")
+	click_wrapper(officer, host)
+	TEST_ASSERT_EQUAL(host.handcuffed, cuffs, "The cured control was not actually handcuffed.")
+	INVOKE_ASYNC(src, PROC_REF(resist_cuffs), host)
+	sleep(5.5 SECONDS)
+	TEST_ASSERT(!escape_finished && host.handcuffed == cuffs, "Curing the infection retained the zombie's fast cuff breakout.")
+	TEST_ASSERT(host.Move(get_step(host, EAST), EAST), "The cured control could not cancel its ordinary long escape.")
+	deadline = world.time + 1 SECONDS
+	UNTIL(escape_finished || world.time >= deadline)
+	TEST_ASSERT(escape_finished && host.handcuffed == cuffs, "The cured control left an unfinished escape callback.")
+
+#endif

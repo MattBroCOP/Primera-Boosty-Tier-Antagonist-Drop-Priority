@@ -44,7 +44,7 @@
 	TEST_ASSERT_EQUAL(controller.form?.id, form_id, "The fixture controller applied the wrong form.")
 	return host
 
-/** Mutation drops removable equipment, refuses a stuck item and still permits ordinary restraint. */
+/** Mutation drops removable equipment, refuses a stuck item and prevents handcuffs until cured. */
 /datum/unit_test/paradise_zombie_mutation_equipment
 	parent_type = /datum/unit_test/paradise_zombie_mutation_test
 
@@ -72,12 +72,81 @@
 	TEST_ASSERT_EQUAL(glasses.loc, get_turf(host), "Mutation deleted or retained its glasses instead of dropping them.")
 	TEST_ASSERT(!host.equip_to_slot_if_possible(backpack, ITEM_SLOT_BACK, disable_warning = TRUE, bypass_equip_delay_self = TRUE), "A mutated body could equip ordinary clothing again.")
 	var/obj/item/restraints/handcuffs/cuffs = allocate(/obj/item/restraints/handcuffs)
-	TEST_ASSERT(host.equip_to_slot_if_possible(cuffs, ITEM_SLOT_HANDCUFFED, disable_warning = TRUE, bypass_equip_delay_self = TRUE), "Mutation's clothing restriction also blocked handcuffs.")
-	TEST_ASSERT_EQUAL(host.handcuffed, cuffs, "The real cuff item did not occupy the restraint slot.")
+	TEST_ASSERT(!host.equip_to_slot_if_possible(cuffs, ITEM_SLOT_HANDCUFFED, disable_warning = TRUE, bypass_equip_delay_self = TRUE), "A higher mutation accepted handcuffs through ordinary equipment handling.")
+	TEST_ASSERT_NULL(host.handcuffed, "Rejected handcuffs still occupied the mutated body's restraint slot.")
 	var/datum/disease/paradise_zombie/infection = locate() in host.diseases
 	infection.cure()
 	TEST_ASSERT_NULL(host.GetComponent(/datum/component/paradise_zombie_mutation), "Cure left the mutation controller attached.")
 	TEST_ASSERT(host.equip_to_slot_if_possible(backpack, ITEM_SLOT_BACK, disable_warning = TRUE, bypass_equip_delay_self = TRUE), "Cure left the mutation's clothing restriction behind.")
+	TEST_ASSERT(host.equip_to_slot_if_possible(cuffs, ITEM_SLOT_HANDCUFFED, disable_warning = TRUE, bypass_equip_delay_self = TRUE), "Cure left the mutation's handcuff immunity behind.")
+
+/** Every higher form withstands real ground hazards and cuff attacks while cure restores ordinary vulnerability. */
+/datum/unit_test/paradise_zombie_mutation_ground_and_cuffs
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+
+/datum/unit_test/paradise_zombie_mutation_ground_and_cuffs/Run()
+	for(var/support_index in 1 to 7)
+		make_zombie(run_loc_floor_top_right)
+	GLOB.paradise_zombie_mutation_progression.first_infection_at = world.time - 20 MINUTES
+	var/mob/living/carbon/human/officer = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
+	var/turf/shard_tile = get_step(run_loc_floor_bottom_left, EAST)
+	allocate(/obj/item/shard, shard_tile)
+	for(var/form_id in GLOB.paradise_zombie_mutation_forms)
+		var/mob/living/carbon/human/host = make_zombie(run_loc_floor_bottom_left)
+		var/datum/component/paradise_zombie_mutation/controller = host.GetComponent(/datum/component/paradise_zombie_mutation)
+		TEST_ASSERT(controller.apply_form(form_id), "The [form_id] fixture could not apply its real form.")
+		TEST_ASSERT(!host.slip(2 SECONDS, lube_flags = GALOSHES_DONT_HELP), "The [form_id] form slipped on a surface which bypasses water-only protection.")
+		TEST_ASSERT(host.Move(shard_tile, EAST), "The [form_id] form could not actually step onto broken glass.")
+		TEST_ASSERT(host.get_brute_loss() > 0, "The real glass hazard did not damage the [form_id] form's feet.")
+		TEST_ASSERT(host.body_position == STANDING_UP && !host.IsParalyzed() && !host.IsKnockdown(), "Broken glass knocked down or paralyzed the [form_id] form.")
+		var/obj/item/restraints/handcuffs/cuffs = allocate(/obj/item/restraints/handcuffs)
+		TEST_ASSERT(officer.put_in_active_hand(cuffs), "The officer could not hold the real handcuffs.")
+		click_wrapper(officer, host)
+		TEST_ASSERT_NULL(host.handcuffed, "A real handcuff attack restrained the [form_id] form.")
+		TEST_ASSERT_EQUAL(cuffs.loc, officer, "The rejected [form_id] cuff attack consumed the officer's handcuffs.")
+		var/datum/disease/paradise_zombie/infection = locate() in host.diseases
+		infection.cure()
+		click_wrapper(officer, host)
+		TEST_ASSERT_EQUAL(host.handcuffed, cuffs, "Curing [form_id] did not restore the real handcuff attack.")
+		TEST_ASSERT(host.slip(2 SECONDS, lube_flags = GALOSHES_DONT_HELP), "Curing [form_id] left its no-slip protection behind.")
+		TEST_ASSERT(host.IsKnockdown(), "The cured [form_id] body did not actually fall after slipping.")
+		host.SetAllImmobility(0)
+		host.forceMove(run_loc_floor_bottom_left)
+		TEST_ASSERT(host.Move(shard_tile, EAST), "The cured [form_id] control could not step onto glass again.")
+		TEST_ASSERT(host.IsParalyzed(), "Curing [form_id] retained its protection from the glass paralysis.")
+		qdel(host)
+
+/** A cuff attempt begun before evolution must revalidate the new body before attaching its cuffs. */
+/datum/unit_test/paradise_zombie_mutation_cuff_transition
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+	var/cuff_attempt_finished = FALSE
+
+/datum/unit_test/paradise_zombie_mutation_cuff_transition/proc/attempt_cuff(obj/item/restraints/handcuffs/cuffs, mob/living/carbon/host, mob/living/officer)
+	cuffs.attempt_to_cuff(host, officer)
+	cuff_attempt_finished = TRUE
+
+/datum/unit_test/paradise_zombie_mutation_cuff_transition/Run()
+	var/mob/living/carbon/human/host = make_zombie(run_loc_floor_bottom_left)
+	for(var/support_index in 1 to 7)
+		make_zombie(run_loc_floor_top_right)
+	GLOB.paradise_zombie_mutation_progression.first_infection_at = world.time - 20 MINUTES
+	var/mob/living/carbon/human/officer = allocate(/mob/living/carbon/human/consistent, get_turf(host))
+	officer.mob_mood.set_enabled(FALSE)
+	officer.add_or_update_variable_actionspeed_modifier(/datum/actionspeed_modifier/base, multiplicative_slowdown = 1)
+	var/obj/item/restraints/handcuffs/cuffs = allocate(/obj/item/restraints/handcuffs)
+	TEST_ASSERT(officer.put_in_active_hand(cuffs), "The late-cuff fixture could not hold its handcuffs.")
+	INVOKE_ASYNC(src, PROC_REF(attempt_cuff), cuffs, host, officer)
+	sleep(1 SECONDS)
+	TEST_ASSERT(!cuff_attempt_finished && !host.handcuffed, "The late-cuff fixture never entered a real cuffing delay.")
+	var/datum/component/paradise_zombie_mutation/controller = host.GetComponent(/datum/component/paradise_zombie_mutation)
+	TEST_ASSERT(controller.apply_form("slasher"), "The cuffing target could not evolve during the attempt.")
+	var/deadline = world.time + 5 SECONDS
+	UNTIL(cuff_attempt_finished || world.time >= deadline)
+	TEST_ASSERT(cuff_attempt_finished, "The late cuff attempt never resolved.")
+	TEST_ASSERT_NULL(host.handcuffed, "A cuff attempt started before evolution restrained the new form.")
+	TEST_ASSERT_EQUAL(cuffs.loc, officer, "Rejecting late cuffs removed them from their holder.")
+	TEST_ASSERT(!cuffs.apply_cuffs(host, officer), "Direct cuff application bypassed the higher form's protection.")
+	TEST_ASSERT_NULL(host.handcuffed, "Rejected direct application attached cuffs anyway.")
 
 /** Ordinary death keeps a physical mutation; surgical cure reverses only its own additive bonuses. */
 /datum/unit_test/paradise_zombie_mutation_death_and_surgery
@@ -335,7 +404,7 @@
 	ritual_finished_at = world.time
 	ritual_finished = TRUE
 
-/// Movement cancels a real pulse without undoing a foreign resize; a retry commits only after six seconds.
+/// Movement keeps the six-second pulse running without overwriting an independent resize.
 /datum/unit_test/paradise_zombie_mutation_ritual_success
 	parent_type = /datum/unit_test/paradise_zombie_mutation_ritual_test
 
@@ -344,6 +413,11 @@
 	TEST_ASSERT_NOTNULL(controller, "The ritual fixture did not create its production controller.")
 	var/datum/mind/choosing_mind = ritual_host.mind
 	var/matrix/original_transform = matrix(ritual_host.transform)
+	var/brute_before = ritual_host.get_brute_loss()
+	var/burn_before = ritual_host.get_fire_loss()
+	var/blood_before = ritual_host.blood_volume
+	var/list/original_limbs = ritual_host.get_bodyparts().Copy()
+	var/started_at = world.time
 	INVOKE_ASYNC(src, TYPE_PROC_REF(/datum/unit_test/paradise_zombie_mutation_ritual_test, run_ritual), controller)
 	TEST_ASSERT(controller.mutating && controller.mutation_visual_active, "The real ritual did not begin its interruptible pulse.")
 	TEST_ASSERT(ritual_host.transform ~= original_transform, "The client pulse changed the authoritative body transform.")
@@ -353,36 +427,26 @@
 	ritual_host.update_transform(1.2)
 	var/matrix/foreign_transform = matrix(ritual_host.transform)
 	var/foreign_size = ritual_host.current_size
-	TEST_ASSERT(ritual_host.Move(get_step(ritual_host, EAST), EAST), "The ritual fixture could not perform its cancelling movement.")
-	TEST_ASSERT(!controller.mutation_visual_active, "Moving did not immediately stop the ritual pulse.")
-	var/deadline = world.time + 2 SECONDS
-	UNTIL(ritual_finished || world.time >= deadline)
-	TEST_ASSERT(ritual_finished && !ritual_succeeded && !controller.mutating, "The moved ritual did not unwind as a failed attempt.")
-	TEST_ASSERT_NULL(controller.form, "A movement-aborted ritual installed a physical form.")
-	TEST_ASSERT(ritual_host.transform ~= foreign_transform, "Cancelling the pulse overwrote an unrelated native resize transform.")
-	TEST_ASSERT_EQUAL(ritual_host.current_size, foreign_size, "Cancelling the pulse overwrote an unrelated native size change.")
-	TEST_ASSERT_NULL(GLOB.paradise_zombie_mutation_progression.fixed_choices[WEAKREF(choosing_mind)], "A movement-aborted ritual spent the mind's permanent choice.")
+	TEST_ASSERT(ritual_host.Move(get_step(ritual_host, EAST), EAST), "The evolving zombie could not walk.")
+	TEST_ASSERT(controller.mutating && controller.mutation_visual_active && !ritual_finished, "Walking interrupted the active evolution.")
+	TEST_ASSERT_NULL(controller.form, "Walking applied the form before the ritual finished.")
+	TEST_ASSERT(ritual_host.transform ~= foreign_transform, "Walking during evolution overwrote an independent resize.")
+	TEST_ASSERT_EQUAL(ritual_host.current_size, foreign_size, "Walking during evolution overwrote an independent size change.")
+	TEST_ASSERT_NULL(GLOB.paradise_zombie_mutation_progression.fixed_choices[WEAKREF(choosing_mind)], "Walking prematurely committed the mind's choice.")
 	var/list/progress = GLOB.paradise_zombie_mutation_progression.get_progress()
-	TEST_ASSERT_EQUAL(progress["special_claimed"], 0, "A movement-aborted ritual reserved a special-form slot.")
-	TEST_ASSERT_EQUAL(gib_animations + length(splatter_directions), 0, "A movement-aborted ritual produced its success burst.")
-	var/brute_before = ritual_host.get_brute_loss()
-	var/burn_before = ritual_host.get_fire_loss()
-	var/blood_before = ritual_host.blood_volume
-	var/list/original_limbs = ritual_host.get_bodyparts()
-	original_limbs = original_limbs.Copy()
-	var/started_at = world.time
-	INVOKE_ASYNC(src, TYPE_PROC_REF(/datum/unit_test/paradise_zombie_mutation_ritual_test, run_ritual), controller)
-	sleep(5 SECONDS)
+	TEST_ASSERT_EQUAL(progress["special_claimed"], 0, "An unfinished moving ritual claimed a special-form slot.")
+	TEST_ASSERT_EQUAL(gib_animations + length(splatter_directions), 0, "An unfinished moving ritual emitted its success burst.")
+	sleep(max(0, started_at + 5 SECONDS - world.time))
 	if(world.time < started_at + 6 SECONDS)
-		TEST_ASSERT(!ritual_finished && controller.mutation_visual_active, "The retry did not retain a real six-second ritual.")
-		TEST_ASSERT_NULL(controller.form, "The retry applied its form before the final second.")
-		TEST_ASSERT_NULL(GLOB.paradise_zombie_mutation_progression.fixed_choices[WEAKREF(choosing_mind)], "The unfinished retry spent its mind's choice.")
+		TEST_ASSERT(!ritual_finished && controller.mutation_visual_active, "The moving ritual did not retain its six-second duration.")
+		TEST_ASSERT_NULL(controller.form, "The moving ritual applied its form before the final second.")
+		TEST_ASSERT_NULL(GLOB.paradise_zombie_mutation_progression.fixed_choices[WEAKREF(choosing_mind)], "The unfinished moving ritual spent its mind's choice.")
 		progress = GLOB.paradise_zombie_mutation_progression.get_progress()
 		TEST_ASSERT_EQUAL(progress["special_claimed"], 0, "An unfinished ritual claimed a rare-form slot.")
 		TEST_ASSERT_EQUAL(gib_animations + length(splatter_directions), 0, "An unfinished ritual emitted its completion burst.")
-	deadline = started_at + 8 SECONDS
+	var/deadline = started_at + 8 SECONDS
 	UNTIL(ritual_finished || world.time >= deadline)
-	TEST_ASSERT(ritual_finished && ritual_succeeded && ritual_finished_at >= started_at + 6 SECONDS, "The real six-second retry did not complete successfully.")
+	TEST_ASSERT(ritual_finished && ritual_succeeded && ritual_finished_at >= started_at + 6 SECONDS, "The real six-second moving ritual did not complete successfully.")
 	TEST_ASSERT(!controller.mutating && !controller.mutation_visual_active, "The completed ritual retained its pulse or ownership lock.")
 	TEST_ASSERT(ritual_host.transform ~= foreign_transform, "Completing the pulse overwrote the host's independent resize transform.")
 	TEST_ASSERT_EQUAL(controller.form?.id, "brute", "The successful ritual did not apply its selected form.")

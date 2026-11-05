@@ -35,6 +35,8 @@
 
 /datum/component/paradise_zombie_mutation_body/RegisterWithParent()
 	RegisterSignal(parent, COMSIG_CARBON_PRE_APPLY_OVERLAY, PROC_REF(on_pre_apply_overlay))
+	RegisterSignal(parent, COMSIG_CARBON_GET_FIRE_OVERLAY, PROC_REF(on_fire_overlay))
+	RegisterSignal(parent, COMSIG_HUMAN_ELECTROCUTION_ANIMATION, PROC_REF(on_electrocution_animation))
 	RegisterSignals(parent, list(COMSIG_CARBON_POST_ATTACH_LIMB, COMSIG_CARBON_POST_REMOVE_LIMB), PROC_REF(on_anatomy_changed))
 	appearance_applied = TRUE
 	var/mob/living/carbon/human/host = parent
@@ -44,9 +46,10 @@
 	for(var/hidden_layer in hidden_layers)
 		host.cut_overlay(host.overlays_standing[hidden_layer])
 	redraw_body()
+	host.update_appearance(UPDATE_OVERLAYS)
 
 /datum/component/paradise_zombie_mutation_body/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_CARBON_PRE_APPLY_OVERLAY, COMSIG_CARBON_POST_ATTACH_LIMB, COMSIG_CARBON_POST_REMOVE_LIMB))
+	UnregisterSignal(parent, list(COMSIG_CARBON_PRE_APPLY_OVERLAY, COMSIG_CARBON_GET_FIRE_OVERLAY, COMSIG_HUMAN_ELECTROCUTION_ANIMATION, COMSIG_CARBON_POST_ATTACH_LIMB, COMSIG_CARBON_POST_REMOVE_LIMB))
 	if(!appearance_applied)
 		return
 	appearance_applied = FALSE
@@ -65,6 +68,7 @@
 	for(var/hidden_layer in hidden_layers)
 		host.cut_overlay(host.overlays_standing[hidden_layer])
 		host.apply_overlay(hidden_layer)
+	host.update_appearance(UPDATE_OVERLAYS)
 
 /** Switches an existing visual mutation while keeping the same real limbs, organs and DNA. */
 /datum/component/paradise_zombie_mutation_body/proc/set_form(new_form_id)
@@ -79,6 +83,8 @@
 	if(appearance_applied)
 		apply_anchor()
 		redraw_body()
+		var/mob/living/carbon/human/host = parent
+		host.update_appearance(UPDATE_OVERLAYS)
 	return TRUE
 
 /** Uses the source's resting anchor without changing race, body height, physical size or limb data. */
@@ -101,6 +107,16 @@
 	SIGNAL_HANDLER
 	clear_melee_visual()
 	redraw_body()
+
+/// Human fire frames contain a human silhouette; generic flames follow the mutation's native anchor.
+/datum/component/paradise_zombie_mutation_body/proc/on_fire_overlay(mob/living/carbon/human/source, stacks, on_fire, fire_icon, list/overrides)
+	SIGNAL_HANDLER
+	overrides += source.make_generic_fire_overlay()
+
+/// The native skeleton belongs to the hidden human anatomy, not the visible DS13 body.
+/datum/component/paradise_zombie_mutation_body/proc/on_electrocution_animation()
+	SIGNAL_HANDLER
+	return COMPONENT_BLOCK_ELECTROCUTION_ANIMATION
 
 /** Draws actual attached limbs, so removal and transplantation remain native anatomy operations. */
 /datum/component/paradise_zombie_mutation_body/proc/redraw_body()

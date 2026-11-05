@@ -30,5 +30,6 @@
 		return
 
 	omen.death_explode(cursed)
-	cursed.spread_bodyparts()
+	if(!HAS_TRAIT(cursed, TRAIT_PARADISE_ZOMBIE))
+		cursed.spread_bodyparts()
 	cursed.spawn_gibs()

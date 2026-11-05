@@ -20,6 +20,12 @@
 
 ///When a carbon slips. Called on /turf/open/handle_slip()
 #define COMSIG_ON_CARBON_SLIP "carbon_slip"
+/// Before a caltrop stuns its victim, after foot damage: (atom/caltrop).
+#define COMSIG_CARBON_PRE_CALTROP_STUN "carbon_pre_caltrop_stun"
+	#define COMPONENT_BLOCK_CALTROP_STUN (1<<0)
+/// Before the human skeleton flash, without changing electrocution damage: (anim_duration).
+#define COMSIG_HUMAN_ELECTROCUTION_ANIMATION "human_electrocution_animation"
+	#define COMPONENT_BLOCK_ELECTROCUTION_ANIMATION (1<<0)
 // /mob/living/carbon physiology signals
 #define COMSIG_CARBON_GAIN_WOUND "carbon_gain_wound" //from /datum/wound/proc/apply_wound() (/mob/living/carbon/C, /datum/wound/W, /obj/item/bodypart/L)
 #define COMSIG_CARBON_LOSE_WOUND "carbon_lose_wound" //from /datum/wound/proc/remove_wound() (/mob/living/carbon/C, /datum/wound/W, /obj/item/bodypart/L)
@@ -90,6 +96,8 @@
 ///Called when someone attempts to cuff a carbon
 #define COMSIG_CARBON_CUFF_ATTEMPTED "carbon_attempt_cuff"
 	#define COMSIG_CARBON_CUFF_PREVENT (1<<0)
+/// Before cuffs are actually attached, including after a cuffing delay: (mob/user).
+#define COMSIG_CARBON_PRE_CUFF_APPLY "carbon_pre_cuff_apply"
 ///Called when a carbon mutates (source = dna, mutation = mutation added)
 #define COMSIG_CARBON_GAIN_MUTATION "carbon_gain_mutation"
 ///Called when a carbon loses a mutation (source = dna, mutation = mutation lose)

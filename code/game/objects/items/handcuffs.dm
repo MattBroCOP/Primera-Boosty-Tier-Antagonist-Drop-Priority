@@ -117,7 +117,9 @@
 		log_combat(user, victim, "failed to handcuff")
 		return
 
-	apply_cuffs(victim, user, dispense = iscyborg(user))
+	if(!apply_cuffs(victim, user, dispense = iscyborg(user)))
+		victim.balloon_alert(user, "can't be handcuffed!")
+		return
 	playsound(loc, cuffsuccesssound, 30, TRUE, -2)
 
 	victim.visible_message(
@@ -147,11 +149,11 @@
  * * dispense - True if the cuffing should create a new item instead of using putting src on the mob, false otherwise. False by default.
 */
 /obj/item/restraints/handcuffs/proc/apply_cuffs(mob/living/carbon/target, mob/user, dispense = FALSE)
-	if(target.handcuffed)
-		return
+	if(target.handcuffed || !target.canBeHandcuffed() || (SEND_SIGNAL(target, COMSIG_CARBON_PRE_CUFF_APPLY, user) & COMSIG_CARBON_CUFF_PREVENT))
+		return FALSE
 
 	if(!user.temporarilyRemoveItemFromInventory(src) && !dispense)
-		return
+		return FALSE
 
 	var/obj/item/restraints/handcuffs/cuffs = src
 	if(dispense)
@@ -161,6 +163,7 @@
 
 	if(dispense)
 		qdel(src)
+	return TRUE
 
 /obj/item/restraints/handcuffs/equipped(mob/living/user, slot)
 	. = ..()

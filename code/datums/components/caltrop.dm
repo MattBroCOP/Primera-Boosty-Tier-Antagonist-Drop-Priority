@@ -116,7 +116,7 @@
 
 	digitigrade_fan.apply_damage(damage, BRUTE, picked_def_zone, wound_bonus = CANT_WOUND, attacking_item = parent)
 
-	if(!(flags & CALTROP_NOSTUN)) // Won't set off the paralysis.
+	if(!(flags & CALTROP_NOSTUN) && !(SEND_SIGNAL(digitigrade_fan, COMSIG_CARBON_PRE_CALTROP_STUN, parent) & COMPONENT_BLOCK_CALTROP_STUN))
 		if(!HAS_TRAIT(digitigrade_fan, TRAIT_LIGHT_STEP))
 			digitigrade_fan.Paralyze(paralyze_duration)
 		else
