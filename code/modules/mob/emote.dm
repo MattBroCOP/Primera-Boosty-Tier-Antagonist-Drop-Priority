@@ -28,6 +28,12 @@
 		return FALSE
 	var/silenced = FALSE
 	for(var/datum/emote/emote in key_emotes)
+		if(!paradise_zombie_can_emote(src, emote, intentional))
+			silenced = TRUE
+			continue
+		if(HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE))
+			param = null
+			message_override = null
 		if(!emote.check_cooldown(src, intentional))
 			silenced = TRUE
 			continue

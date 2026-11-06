@@ -148,8 +148,9 @@
 /datum/action/cooldown/paradise_zombie_claws
 	name = "Когти зомби"
 	desc = "Выпустить или убрать когти. Они заражают ранения в голову и грудь и вскрывают повреждённые черепа."
-	button_icon = 'modular_bandastation/vampire/icons/mob/actions/actions.dmi'
-	button_icon_state = "vampire_claws"
+	button_icon = 'modular_bandastation/paradise_zombies/icons/abilities.dmi'
+	button_icon_state = "claws"
+	background_icon_state = null
 	check_flags = AB_CHECK_CONSCIOUS|AB_CHECK_HANDS_BLOCKED
 	cooldown_time = 0
 	/// Claws created by this action, also cleaned up on body transfer.

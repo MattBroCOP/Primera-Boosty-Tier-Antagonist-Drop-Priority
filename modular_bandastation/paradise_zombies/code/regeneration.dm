@@ -6,6 +6,9 @@
 	/// Retains the original once-per-second NPC decision cadence independently of subsystem frequency.
 	var/ai_accumulator = 0
 	var/datum/action/cooldown/paradise_zombie_scream/scream_action
+	var/list/removed_emote_verbs
+	var/static/list/ordinary_footsteps = list('modular_bandastation/paradise_zombies/sound/footsteps/ds13/ordinary_1.ogg', 'modular_bandastation/paradise_zombies/sound/footsteps/ds13/ordinary_2.ogg')
+	var/static/list/ordinary_cries = list('modular_bandastation/paradise_zombies/sound/voices/ordinary_1.ogg')
 	/// Movement delay when the abandoned body follows prey.
 	COOLDOWN_DECLARE(next_step)
 
@@ -18,17 +21,41 @@
 
 /datum/component/paradise_zombie_regen/RegisterWithParent()
 	RegisterSignals(parent, list(SIGNAL_ADDTRAIT(TRAIT_PARADISE_ZOMBIE), SIGNAL_REMOVETRAIT(TRAIT_PARADISE_ZOMBIE)), PROC_REF(refresh_bleeding))
+	RegisterSignal(parent, COMSIG_HUMAN_FOOTSTEP_SOUND, PROC_REF(on_footstep_sound))
+	RegisterSignals(parent, list(COMSIG_MOB_EMOTE_SOUND("scream"), COMSIG_MOB_EMOTE_SOUND("deathgasp"), COMSIG_MOB_EMOTE_SOUND("gasp"), COMSIG_MOB_EMOTE_SOUND("moan")), PROC_REF(on_monster_cry))
 	refresh_scream()
+	refresh_emotes()
 	ADD_TRAIT(parent, TRAIT_TRUE_NIGHT_VISION, REF(src))
 
 /datum/component/paradise_zombie_regen/UnregisterFromParent()
 	QDEL_NULL(scream_action)
+	refresh_emotes(restore = TRUE)
 	UnregisterSignal(parent, list(SIGNAL_ADDTRAIT(TRAIT_PARADISE_ZOMBIE), SIGNAL_REMOVETRAIT(TRAIT_PARADISE_ZOMBIE)))
+	UnregisterSignal(parent, list(COMSIG_HUMAN_FOOTSTEP_SOUND, COMSIG_MOB_EMOTE_SOUND("scream"), COMSIG_MOB_EMOTE_SOUND("deathgasp"), COMSIG_MOB_EMOTE_SOUND("gasp"), COMSIG_MOB_EMOTE_SOUND("moan")))
 	REMOVE_TRAIT(parent, TRAIT_TRUE_NIGHT_VISION, REF(src))
 
 /datum/component/paradise_zombie_regen/Destroy(force)
 	STOP_PROCESSING(SSprocessing, src)
 	return ..()
+
+/// Change only the selected file, after native movement, terrain and silence checks.
+/datum/component/paradise_zombie_regen/proc/on_footstep_sound(mob/living/carbon/human/source, list/step_sound)
+	SIGNAL_HANDLER
+	if(!HAS_TRAIT(source, TRAIT_PARADISE_ZOMBIE))
+		return
+	var/datum/component/paradise_zombie_mutation/mutation = source.GetComponent(/datum/component/paradise_zombie_mutation)
+	step_sound[1] = pick(mutation?.form?.footstep_sounds || ordinary_footsteps)
+
+/// Body-owned voices override human organs and masks without replacing their listeners.
+/datum/component/paradise_zombie_regen/proc/on_monster_cry(mob/living/carbon/human/source, key, list/sounds)
+	SIGNAL_HANDLER
+	if(!HAS_TRAIT(source, TRAIT_PARADISE_ZOMBIE))
+		return
+	// Keep silent death messages outside the native audio cooldown path.
+	if(key == "deathgasp" && !source.death_sound)
+		return
+	var/datum/component/paradise_zombie_mutation/mutation = source.GetComponent(/datum/component/paradise_zombie_mutation)
+	sounds[pick(mutation?.form?.cry_sounds || ordinary_cries)] = EMOTE_SOUND_STATUS_EFFECT + 1
 
 /// Update wound bleeding immediately on transformation and cure.
 /datum/component/paradise_zombie_regen/proc/refresh_bleeding(mob/living/carbon/human/zombie)
@@ -36,6 +63,7 @@
 	for(var/obj/item/bodypart/limb as anything in zombie.get_bodyparts())
 		limb.refresh_bleed_rate()
 	refresh_scream()
+	refresh_emotes()
 
 /// This body keeps its lower-zombie action even without a mind or ordinary outbreak membership.
 /datum/component/paradise_zombie_regen/proc/refresh_scream()

@@ -3,6 +3,9 @@
 #define COMSIG_CARBON_STOMACH_DIGEST "carbon_stomach_digest"
 // BANDASTATION ADDITION END
 
+/// From /datum/element/footstep/play_humanstep(): (list/step_sound), containing the selected file at index 1.
+#define COMSIG_HUMAN_FOOTSTEP_SOUND "human_footstep_sound"
+
 ///Called from /datum/species/proc/help : (mob/living/carbon/human/helper, datum/martial_art/helper_style)
 #define COMSIG_CARBON_PRE_HELP "carbon_pre_help"
 	/// Stops the rest of the help

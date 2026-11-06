@@ -2,8 +2,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/tongue
 	name = "Хватательный язык"
 	desc = "Выстрелить видимым языком до 8 клеток и подтянуть жертву по свободному пути. Попадание по вам, потеря сознания или препятствие срывают тягу."
-	button_icon = 'icons/mob/actions/actions_changeling.dmi'
-	button_icon_state = "tentacle"
+	button_icon_state = "tongue"
 	required_form = "slasher"
 	cooldown_time = 18 SECONDS
 	click_to_activate = TRUE

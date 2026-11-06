@@ -2,6 +2,7 @@
 
 #include "code/disease.dm"
 #include "code/organs.dm"
+#include "code/emotes.dm"
 #include "code/regeneration.dm"
 #include "code/chemistry.dm"
 #include "code/ingredients.dm"

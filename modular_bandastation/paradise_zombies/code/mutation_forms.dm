@@ -33,13 +33,18 @@ GLOBAL_LIST_INIT(paradise_zombie_mutation_forms, list(
 	var/barrier_damage_bonus = 0
 	/// Actions owned by the physical body's mutation controller.
 	var/list/ability_types = list()
+	/// Physical-body sound banks; native movement and emotes still decide when to play them.
+	var/list/footstep_sounds
+	var/list/cry_sounds
 
 /datum/paradise_zombie_form/slasher
 	id = "slasher"
 	name = "Рваный"
-	desc = "Основная мутировавшая форма: когти, укусы, вскрытие дверей и язык, притягивающий жертву. Обычная живучесть зомби."
+	desc = "Основная мутировавшая форма: когти, укусы, разрушение дверей ударами и язык, притягивающий жертву. Обычная живучесть зомби."
 	body_icon = 'modular_bandastation/paradise_zombies/icons/mutations/slasher.dmi'
 	ability_types = list(/datum/action/cooldown/paradise_zombie_mutation/tongue)
+	footstep_sounds = list('modular_bandastation/paradise_zombies/sound/footsteps/ds13/slasher_1.ogg', 'modular_bandastation/paradise_zombies/sound/footsteps/ds13/slasher_2.ogg')
+	cry_sounds = list('modular_bandastation/paradise_zombies/sound/voices/slasher_1.ogg', 'modular_bandastation/paradise_zombies/sound/voices/slasher_2.ogg')
 
 /datum/paradise_zombie_form/twitcher
 	id = "twitcher"
@@ -50,6 +55,8 @@ GLOBAL_LIST_INIT(paradise_zombie_mutation_forms, list(
 	slowdown = -1.5
 	claw_multiplier = 0.85
 	ability_types = list(/datum/action/cooldown/paradise_zombie_mutation/dash, /datum/action/cooldown/paradise_zombie_mutation/dash/charge)
+	footstep_sounds = list('modular_bandastation/paradise_zombies/sound/footsteps/ds13/twitcher_1.ogg', 'modular_bandastation/paradise_zombies/sound/footsteps/ds13/twitcher_2.ogg')
+	cry_sounds = list('modular_bandastation/paradise_zombies/sound/mutations/twitcher_shout.ogg')
 
 /datum/paradise_zombie_form/hunter
 	id = "hunter"
@@ -61,19 +68,22 @@ GLOBAL_LIST_INIT(paradise_zombie_mutation_forms, list(
 	slowdown = -0.4
 	claw_multiplier = 0.9
 	ability_types = list(/datum/action/cooldown/paradise_zombie_mutation/dash/pounce, /datum/action/cooldown/paradise_zombie_mutation/dash/pounce/pin)
+	footstep_sounds = list('modular_bandastation/paradise_zombies/sound/footsteps/ds13/hunter_1.ogg', 'modular_bandastation/paradise_zombies/sound/footsteps/ds13/hunter_2.ogg')
+	cry_sounds = list('modular_bandastation/paradise_zombies/sound/voices/hunter_1.ogg', 'modular_bandastation/paradise_zombies/sound/voices/hunter_2.ogg')
 
 /datum/paradise_zombie_form/brute
 	id = "brute"
 	name = "Громила"
-	desc = "Могучее тело с тройной живучестью. Тяжёлые когти сокрушают баррикады, а отдельным действием можно выламывать стены. Вы медленны и заметны."
+	desc = "Могучее и живучее тело. Тяжёлые когти сокрушают баррикады, а отдельным действием можно выламывать стены. Вы медленны и заметны."
 	tier = 3
 	body_icon = 'modular_bandastation/paradise_zombies/icons/mutations/brute.dmi'
-	health_bonus = 150
-	health_multiplier = 3
+	health_bonus = 370
 	slowdown = 1.5
 	claw_multiplier = 1.5
 	barrier_damage_bonus = 60
 	ability_types = list(/datum/action/cooldown/paradise_zombie_mutation/tear_wall)
+	footstep_sounds = list('modular_bandastation/paradise_zombies/sound/footsteps/alien_footstep_large1.ogg', 'modular_bandastation/paradise_zombies/sound/footsteps/alien_footstep_large2.ogg', 'modular_bandastation/paradise_zombies/sound/footsteps/alien_footstep_large3.ogg')
+	cry_sounds = list('modular_bandastation/paradise_zombies/sound/voices/brute_1.ogg', 'modular_bandastation/paradise_zombies/sound/voices/brute_2.ogg')
 
 /datum/paradise_zombie_form/spitter
 	id = "spitter"
@@ -85,6 +95,8 @@ GLOBAL_LIST_INIT(paradise_zombie_mutation_forms, list(
 	slowdown = 0.3
 	claw_multiplier = 0.4
 	ability_types = list(/datum/action/cooldown/paradise_zombie_mutation/bile, /datum/action/cooldown/paradise_zombie_mutation/bile/acid)
+	footstep_sounds = list('modular_bandastation/paradise_zombies/sound/footsteps/ds13/spitter_1.ogg', 'modular_bandastation/paradise_zombies/sound/footsteps/ds13/spitter_2.ogg')
+	cry_sounds = list('modular_bandastation/paradise_zombies/sound/voices/spitter_1.ogg', 'modular_bandastation/paradise_zombies/sound/voices/spitter_2.ogg')
 
 /datum/paradise_zombie_form/exploder
 	id = "exploder"
@@ -96,6 +108,8 @@ GLOBAL_LIST_INIT(paradise_zombie_mutation_forms, list(
 	slowdown = 0.5
 	claw_multiplier = 0.6
 	ability_types = list(/datum/action/cooldown/paradise_zombie_mutation/explode, /datum/action/cooldown/paradise_zombie_mutation/vomit_bile)
+	footstep_sounds = list('modular_bandastation/paradise_zombies/sound/footsteps/ds13/exploder_1.ogg', 'modular_bandastation/paradise_zombies/sound/footsteps/ds13/exploder_2.ogg')
+	cry_sounds = list('modular_bandastation/paradise_zombies/sound/voices/exploder_1.ogg', 'modular_bandastation/paradise_zombies/sound/voices/exploder_2.ogg')
 
 /// A source-owned variable modifier lets mutation cleanup restore normal movement exactly.
 /datum/movespeed_modifier/paradise_zombie_mutation

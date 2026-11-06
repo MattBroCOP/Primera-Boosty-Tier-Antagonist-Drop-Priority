@@ -2,7 +2,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/tear_wall
 	name = "Выломать стену"
 	desc = "Выломать соседнюю стену в три этапа: обычную за 4 секунды, укреплённую за 12. Можно двигаться рядом со стеной; отход, потеря сознания и лечение прерывают работу."
-	button_icon_state = "knock"
+	button_icon_state = "tear_wall"
 	required_form = "brute"
 	cooldown_time = 0
 	click_to_activate = TRUE

@@ -2,8 +2,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/vomit_bile
 	name = "Извергнуть желчь"
 	desc = "Выплеснуть видимую желчь до 5 клеток. Попадание полностью закрывает зрение на 5 секунд; желчь можно смыть с лица. Преграды и полная биозащита останавливают попадание. Зомби не страдают. Перезарядка — 20 секунд."
-	button_icon = 'icons/mob/actions/actions_xeno.dmi'
-	button_icon_state = "alien_neurotoxin"
+	button_icon_state = "vomit"
 	required_form = "exploder"
 	cooldown_time = 20 SECONDS
 	click_to_activate = TRUE

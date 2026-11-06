@@ -480,7 +480,7 @@ BANDASTATION REMOVAL - END */
 
 /datum/emote/living/scream/get_sound(mob/living/user)
 	. = ..()
-	if(!ishuman(user) || !.)
+	if(!ishuman(user) || !. || HAS_TRAIT(user, TRAIT_PARADISE_ZOMBIE))
 		return
 	var/mob/living/carbon/human/humie = user
 	//Rare chance for this banger of a classic to play instead of the avarage joe screams

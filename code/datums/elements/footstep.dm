@@ -225,7 +225,9 @@
 
 	// list returned by playsound() filled by client mobs who heard the footstep. given to play_fov_effect()
 	var/list/heard_clients
-	var/picked_sound = pick(footstep_sounds[1])
+	var/list/step_sound = list(pick(footstep_sounds[1]))
+	SEND_SIGNAL(source, COMSIG_HUMAN_FOOTSTEP_SOUND, step_sound)
+	var/picked_sound = step_sound[1]
 	var/picked_volume = footstep_sounds[2] * volume * volume_multiplier
 	var/picked_range = footstep_sounds[3] + e_range + range_adjustment
 

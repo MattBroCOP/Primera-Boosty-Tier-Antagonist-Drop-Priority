@@ -2,8 +2,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/bile/acid
 	name = "Кислотный плевок"
 	desc = "Плюнуть кислотой до 13 клеток. Попадание оставляет на 12 секунд смываемые лужи в пределах одной клетки. Они обжигают стоящих в них противников на 4 единицы в секунду до учёта биологической защиты."
-	button_icon = 'icons/mob/actions/actions_xeno.dmi'
-	button_icon_state = "alien_acid"
+	button_icon_state = "acid"
 	cooldown_time = 20 SECONDS
 	projectile_type = /obj/projectile/paradise_zombie_bile/acid
 

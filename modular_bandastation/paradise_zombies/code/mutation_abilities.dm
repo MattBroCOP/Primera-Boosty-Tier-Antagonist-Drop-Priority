@@ -108,7 +108,8 @@
 /** Mutation actions own their temporary world effects, including effects already away from their caster. */
 /datum/action/cooldown/paradise_zombie_mutation
 	abstract_type = /datum/action/cooldown/paradise_zombie_mutation
-	button_icon = 'icons/mob/actions/actions_spells.dmi'
+	button_icon = 'modular_bandastation/paradise_zombies/icons/abilities.dmi'
+	background_icon_state = null
 	check_flags = AB_CHECK_CONSCIOUS|AB_CHECK_INCAPACITATED|AB_CHECK_LYING
 	/// The body's mutation controller owns this action, never the mind or the visual renderer.
 	var/datum/weakref/controller_ref
@@ -182,7 +183,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/dash
 	name = "Рывок"
 	desc = "Рвануть до 12 клеток. Стены и закрытые препятствия останавливают рывок."
-	button_icon_state = "blink"
+	button_icon_state = "dash"
 	required_form = "twitcher"
 	cooldown_time = 8 SECONDS
 	click_to_activate = TRUE
@@ -210,7 +211,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/dash/pounce
 	name = "Прыжок из засады"
 	desc = "Прыгнуть до 10 клеток и сбить жертву когтями. После промаха на две секунды вы замедлены и получаете на четверть больше урона."
-	button_icon_state = "mutate"
+	button_icon_state = "pounce"
 	required_form = "hunter"
 	cooldown_time = 20 SECONDS
 	travel_range = 10
@@ -337,7 +338,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/bile
 	name = "Желчный плевок"
 	desc = "Плюнуть видимой едкой желчью до 13 клеток. Попадание оставляет смываемую лужу, замедляющую живых противников."
-	button_icon_state = "smoke"
+	button_icon_state = "bile"
 	required_form = "spitter"
 	cooldown_time = 12 SECONDS
 	click_to_activate = TRUE
@@ -475,7 +476,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/explode
 	name = "Разрыв желчного узла"
 	desc = "Две секунды раздувать желчный узел, затем взорваться в радиусе 5 клеток. Попадание по открытому узлу срывает взрыв и ранит вас."
-	button_icon_state = "gib"
+	button_icon_state = "explode"
 	required_form = "exploder"
 	cooldown_time = 20 SECONDS
 	/// The weak point exists only while a detonation is visibly preparing.

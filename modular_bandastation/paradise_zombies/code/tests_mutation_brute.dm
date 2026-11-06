@@ -1,12 +1,12 @@
 #ifdef UNIT_TESTS
 
-/** Tripling Brute health must retain independent max-health changes and cellular injury through cure. */
+/** Brute's health bonus must retain independent max-health changes and cellular injury through cure. */
 /datum/unit_test/paradise_zombie_brute_health
 	parent_type = /datum/unit_test/paradise_zombie_mutation_test
 
 /datum/unit_test/paradise_zombie_brute_health/Run()
 	var/mob/living/carbon/human/standard = make_mutant("brute")
-	TEST_ASSERT_EQUAL(standard.maxHealth, 750, "An ordinary human's Brute form did not triple its former 250 maximum health.")
+	TEST_ASSERT_EQUAL(standard.maxHealth, 470, "An ordinary human's Brute form did not reach 470 maximum health.")
 	var/datum/disease/paradise_zombie/infection = locate() in standard.diseases
 	infection.cure()
 	TEST_ASSERT_EQUAL(standard.maxHealth, 100, "Curing Brute failed to restore an ordinary human's original maximum health.")
@@ -17,10 +17,10 @@
 	TEST_ASSERT_EQUAL(host.maxHealth, 120, "The health fixture did not acquire real independent cellular injury.")
 	var/datum/component/paradise_zombie_mutation/controller = host.GetComponent(/datum/component/paradise_zombie_mutation)
 	TEST_ASSERT(controller.apply_form("brute"), "The nonstandard injured body could not become a Brute.")
-	TEST_ASSERT_EQUAL(host.maxHealth, 810, "Brute did not triple this body's existing 270 form maximum health.")
+	TEST_ASSERT_EQUAL(host.maxHealth, 490, "Brute failed to retain the body's independent health modifiers alongside its 370 bonus.")
 	host.setMaxHealth(host.maxHealth + 25)
 	cellular_injury.change_amount(10)
-	TEST_ASSERT_EQUAL(host.maxHealth, 825, "Independent health changes did not apply normally after mutation.")
+	TEST_ASSERT_EQUAL(host.maxHealth, 505, "Independent health changes did not apply normally after mutation.")
 	infection = locate() in host.diseases
 	infection.cure()
 	TEST_ASSERT_EQUAL(host.maxHealth, 135, "Cure erased a foreign health bonus or new cellular damage instead of subtracting only the applied mutation delta.")
@@ -153,5 +153,67 @@
 	TEST_ASSERT_NULL(wall.GetComponent(/datum/component/torn_wall), "The [cancellation]-cancelled cast delivered a delayed native tear stage.")
 	if(!QDELETED(action))
 		TEST_ASSERT(!action.tearing, "A cancelled wall cast retained its lock.")
+
+/** Native movement replaces only Brute's allowed footfalls and restores ordinary sounds on cure. */
+/datum/unit_test/paradise_zombie_brute_footsteps
+	parent_type = /datum/unit_test/paradise_zombie_mutation_ability_test
+	/// Keep each native payload by reference, including changes made after our signal callback.
+	var/list/observed_steps = list()
+
+/datum/unit_test/paradise_zombie_brute_footsteps/proc/on_step_sound(mob/living/carbon/human/source, list/step_sound)
+	SIGNAL_HANDLER
+	observed_steps += list(step_sound)
+
+/datum/unit_test/paradise_zombie_brute_footsteps/Run()
+	var/mob/living/carbon/human/host = make_mutant("brute")
+	TEST_ASSERT(prepare_range(host), "The Brute footstep fixture could not reserve a private range.")
+	for(var/turf/open/tile as anything in range_reservation.reserved_turfs)
+		tile.footstep = FOOTSTEP_FLOOR
+		tile.barefootstep = FOOTSTEP_HARD_BAREFOOT
+		tile.clawfootstep = FOOTSTEP_HARD_CLAW
+		tile.heavyfootstep = FOOTSTEP_GENERIC_HEAVY
+	var/list/brute_sounds = list(
+		'modular_bandastation/paradise_zombies/sound/footsteps/alien_footstep_large1.ogg',
+		'modular_bandastation/paradise_zombies/sound/footsteps/alien_footstep_large2.ogg',
+		'modular_bandastation/paradise_zombies/sound/footsteps/alien_footstep_large3.ogg',
+	)
+	RegisterSignal(host, COMSIG_HUMAN_FOOTSTEP_SOUND, PROC_REF(on_step_sound))
+	host.set_move_intent(MOVE_INTENT_RUN)
+	TEST_ASSERT(host.Move(get_step(host, EAST), EAST) && host.Move(get_step(host, WEST), WEST), "Brute could not take two real running steps.")
+	TEST_ASSERT_EQUAL(length(observed_steps), 1, "Two actual Brute moves did not retain the native one-footfall cadence.")
+	var/list/step_sound = observed_steps[1]
+	TEST_ASSERT(step_sound[1] in brute_sounds, "The final native footstep payload did not select a supplied Brute sound.")
+
+	observed_steps.Cut()
+	var/mob/living/carbon/human/witness = allocate(/mob/living/carbon/human/consistent, get_step(host, NORTH))
+	RegisterSignal(witness, COMSIG_HUMAN_FOOTSTEP_SOUND, PROC_REF(on_step_sound))
+	witness.set_move_intent(MOVE_INTENT_RUN)
+	TEST_ASSERT(witness.Move(get_step(witness, EAST), EAST) && witness.Move(get_step(witness, WEST), WEST), "The neighbouring human could not take two real running steps.")
+	TEST_ASSERT_EQUAL(length(observed_steps), 1, "The same-floor human lost the native one-footfall cadence.")
+	step_sound = observed_steps[1]
+	TEST_ASSERT(!(step_sound[1] in brute_sounds), "Brute's override changed another human's footstep on the same floor.")
+
+	observed_steps.Cut()
+	host.set_move_intent(MOVE_INTENT_WALK)
+	TEST_ASSERT(host.Move(get_step(host, EAST), EAST) && host.Move(get_step(host, WEST), WEST), "The Brute could not take two real walking steps.")
+	TEST_ASSERT_EQUAL(length(observed_steps), 0, "The Brute override broke native silent walking.")
+	host.set_move_intent(MOVE_INTENT_RUN)
+	ADD_TRAIT(host, TRAIT_SILENT_FOOTSTEPS, REF(src))
+	TEST_ASSERT(host.Move(get_step(host, EAST), EAST) && host.Move(get_step(host, WEST), WEST), "The silenced Brute could not take two real running steps.")
+	TEST_ASSERT_EQUAL(length(observed_steps), 0, "The Brute override bypassed an independent silent-footsteps trait.")
+	REMOVE_TRAIT(host, TRAIT_SILENT_FOOTSTEPS, REF(src))
+	var/turf/start = get_turf(host)
+	host.forceMove(get_step(host, EAST))
+	host.forceMove(start)
+	TEST_ASSERT_EQUAL(length(observed_steps), 0, "Forced movement incorrectly emitted the Brute footstep hook.")
+
+	var/datum/disease/paradise_zombie/infection = locate() in host.diseases
+	infection.cure()
+	TEST_ASSERT(host.Move(get_step(host, EAST), EAST) && host.Move(get_step(host, WEST), WEST), "The cured body could not take two real running steps.")
+	TEST_ASSERT_EQUAL(length(observed_steps), 1, "Cure changed the native footfall cadence.")
+	step_sound = observed_steps[1]
+	TEST_ASSERT(step_sound[1] in GLOB.barefootstep[FOOTSTEP_HARD_BAREFOOT][1], "The cured body retained Brute's override instead of its native barefoot sound.")
+	UnregisterSignal(host, COMSIG_HUMAN_FOOTSTEP_SOUND)
+	UnregisterSignal(witness, COMSIG_HUMAN_FOOTSTEP_SOUND)
 
 #endif
