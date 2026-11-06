@@ -165,7 +165,7 @@
 		GLOB.paradise_zombie_mutation_progression.release_body(host)
 		return FALSE
 	ADD_TRAIT(host, TRAIT_NO_SLIP_ALL, REF(src))
-	applied_health_bonus = max(chosen.health_bonus, 30 - host.maxHealth)
+	applied_health_bonus = max(30, host.maxHealth + chosen.health_bonus) * chosen.health_multiplier - host.maxHealth
 	host.setMaxHealth(host.maxHealth + applied_health_bonus)
 	host.updatehealth()
 	host.add_or_update_variable_movespeed_modifier(/datum/movespeed_modifier/paradise_zombie_mutation, multiplicative_slowdown = chosen.slowdown)
@@ -177,6 +177,8 @@
 	for(var/obj/item/paradise_zombie_claw/claw in host.get_held_items())
 		modify_claws(claw)
 	QDEL_NULL(selection_action)
+	var/datum/component/paradise_zombie_regen/regeneration = host.GetComponent(/datum/component/paradise_zombie_regen)
+	regeneration?.refresh_scream()
 	host.visible_message(span_danger("Тело [host] превращается в чудовищную форму!"))
 	to_chat(host, span_notice("Мутация: [chosen.name]. [chosen.desc]"))
 	return TRUE
@@ -196,6 +198,9 @@
 			host.updatehealth()
 	applied_health_bonus = 0
 	form = null
+	if(!QDELETED(host))
+		var/datum/component/paradise_zombie_regen/regeneration = host.GetComponent(/datum/component/paradise_zombie_regen)
+		regeneration?.refresh_scream()
 
 /datum/component/paradise_zombie_mutation/proc/modify_claws(obj/item/paradise_zombie_claw/claw)
 	if(form && !claw.GetComponent(/datum/component/paradise_zombie_mutation_claws))

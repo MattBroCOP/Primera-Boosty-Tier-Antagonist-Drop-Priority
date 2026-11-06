@@ -387,6 +387,7 @@ rough example of the "cone" made by the 3 dirs checked
 					continue
 				if(blocker.CanPass(dummy, get_dir(user_turf, next_step)))
 					continue
+				qdel(dummy)
 				return FALSE // Could not leave the first turf.
 			first_step = FALSE
 		if(next_step.density)

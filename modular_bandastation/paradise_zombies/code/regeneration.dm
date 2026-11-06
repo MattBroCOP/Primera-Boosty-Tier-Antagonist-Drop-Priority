@@ -5,6 +5,7 @@
 	var/player_ckey
 	/// Retains the original once-per-second NPC decision cadence independently of subsystem frequency.
 	var/ai_accumulator = 0
+	var/datum/action/cooldown/paradise_zombie_scream/scream_action
 	/// Movement delay when the abandoned body follows prey.
 	COOLDOWN_DECLARE(next_step)
 
@@ -17,9 +18,13 @@
 
 /datum/component/paradise_zombie_regen/RegisterWithParent()
 	RegisterSignals(parent, list(SIGNAL_ADDTRAIT(TRAIT_PARADISE_ZOMBIE), SIGNAL_REMOVETRAIT(TRAIT_PARADISE_ZOMBIE)), PROC_REF(refresh_bleeding))
+	refresh_scream()
+	ADD_TRAIT(parent, TRAIT_TRUE_NIGHT_VISION, REF(src))
 
 /datum/component/paradise_zombie_regen/UnregisterFromParent()
+	QDEL_NULL(scream_action)
 	UnregisterSignal(parent, list(SIGNAL_ADDTRAIT(TRAIT_PARADISE_ZOMBIE), SIGNAL_REMOVETRAIT(TRAIT_PARADISE_ZOMBIE)))
+	REMOVE_TRAIT(parent, TRAIT_TRUE_NIGHT_VISION, REF(src))
 
 /datum/component/paradise_zombie_regen/Destroy(force)
 	STOP_PROCESSING(SSprocessing, src)
@@ -30,6 +35,20 @@
 	SIGNAL_HANDLER
 	for(var/obj/item/bodypart/limb as anything in zombie.get_bodyparts())
 		limb.refresh_bleed_rate()
+	refresh_scream()
+
+/// This body keeps its lower-zombie action even without a mind or ordinary outbreak membership.
+/datum/component/paradise_zombie_regen/proc/refresh_scream()
+	if(QDELETED(src) || QDELETED(parent))
+		return
+	var/mob/living/carbon/human/host = parent
+	var/datum/component/paradise_zombie_mutation/controller = host.GetComponent(/datum/component/paradise_zombie_mutation)
+	if(HAS_TRAIT(host, TRAIT_PARADISE_ZOMBIE) && !controller?.form)
+		if(!scream_action)
+			scream_action = new(src)
+			scream_action.Grant(host)
+	else
+		QDEL_NULL(scream_action)
 
 /datum/component/paradise_zombie_regen/process(seconds_per_tick)
 	var/mob/living/carbon/human/zombie = parent

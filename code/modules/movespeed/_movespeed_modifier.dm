@@ -38,6 +38,8 @@ Key procs
 
 	/// Multiplicative slowdown
 	var/multiplicative_slowdown = 0
+	/// Scales the final movement delay after additive slowdowns have been combined.
+	var/delay_multiplier = 1
 
 	/// Movetypes this applies to
 	var/movetypes = ALL
@@ -174,6 +176,7 @@ GLOBAL_LIST_EMPTY(movespeed_modification_cache)
 /// Go through the list of movespeed modifiers and calculate a final movespeed. ANY ADD/REMOVE DONE IN UPDATE_MOVESPEED MUST HAVE THE UPDATE ARGUMENT SET AS FALSE!
 /mob/proc/update_movespeed()
 	. = 0
+	var/delay_multiplier = 1
 	var/list/conflict_tracker = list()
 	for(var/key in get_movespeed_modifiers())
 		var/datum/movespeed_modifier/M = movespeed_modification[key]
@@ -191,6 +194,8 @@ GLOBAL_LIST_EMPTY(movespeed_modification_cache)
 			else
 				continue
 		. += amt
+		delay_multiplier *= M.delay_multiplier
+	. *= delay_multiplier
 	cached_multiplicative_slowdown = .
 	SEND_SIGNAL(src, COMSIG_MOB_MOVESPEED_UPDATED)
 
@@ -204,4 +209,6 @@ GLOBAL_LIST_EMPTY(movespeed_modification_cache)
 /proc/movespeed_data_null_check(datum/movespeed_modifier/M) //Determines if a data list is not meaningful and should be discarded.
 	. = TRUE
 	if(M.multiplicative_slowdown)
+		. = FALSE
+	if(M.delay_multiplier != 1)
 		. = FALSE

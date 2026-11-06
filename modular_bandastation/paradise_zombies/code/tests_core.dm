@@ -334,4 +334,111 @@
 	UNTIL(escape_finished || world.time >= deadline)
 	TEST_ASSERT(escape_finished && host.handcuffed == cuffs, "The cured control left an unfinished escape callback.")
 
+/// Counts real sight updates without replacing the native calculation, which requires a connected client.
+/mob/living/carbon/human/consistent/paradise_zombie_sight_test
+	var/sight_updates = 0
+
+/mob/living/carbon/human/consistent/paradise_zombie_sight_test/update_sight()
+	. = ..()
+	sight_updates++
+
+/** Night vision belongs to a mature physical body and updates native sight on transformation and cure. */
+/datum/unit_test/paradise_zombie_night_vision_lifecycle
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+
+/datum/unit_test/paradise_zombie_night_vision_lifecycle/Run()
+	var/mob/living/carbon/human/consistent/paradise_zombie_sight_test/patient = allocate(/mob/living/carbon/human/consistent/paradise_zombie_sight_test)
+	patient.mind_initialize()
+	var/obj/item/organ/eyes/original_eyes = patient.get_organ_slot(ORGAN_SLOT_EYES)
+	var/datum/disease/paradise_zombie/infection = new()
+	TEST_ASSERT(patient.ForceContractDisease(infection, make_copy = FALSE, del_on_fail = TRUE), "The night vision fixture could not contract its real infection.")
+	TEST_ASSERT(!HAS_TRAIT(patient, TRAIT_TRUE_NIGHT_VISION), "An incubating infection granted mature zombie night vision.")
+	var/updates_before = patient.sight_updates
+	infection.stage = 8
+	infection.process_infection_cycle()
+	var/datum/component/paradise_zombie_regen/regeneration = patient.GetComponent(/datum/component/paradise_zombie_regen)
+	TEST_ASSERT_NOTNULL(regeneration, "The mature body omitted its regeneration component.")
+	var/vision_source = REF(regeneration)
+	TEST_ASSERT(HAS_TRAIT_FROM(patient, TRAIT_TRUE_NIGHT_VISION, vision_source), "Transformation omitted source-owned native night vision.")
+	TEST_ASSERT(patient.sight_updates > updates_before, "Transformation did not invoke the native sight update through its vision trait.")
+	TEST_ASSERT_EQUAL(patient.get_organ_slot(ORGAN_SLOT_EYES), original_eyes, "Night vision replaced the patient's actual eyes.")
+	TEST_ASSERT(!HAS_TRAIT(patient, TRAIT_XRAY_VISION) && !HAS_TRAIT(patient, TRAIT_THERMAL_VISION) && !HAS_TRAIT(patient, TRAIT_MESON_VISION), "Zombie night vision also granted vision through walls.")
+	var/mob/living/carbon/human/recipient = allocate(/mob/living/carbon/human/consistent)
+	patient.mind.transfer_to(recipient)
+	TEST_ASSERT(HAS_TRAIT_FROM(patient, TRAIT_TRUE_NIGHT_VISION, vision_source), "Abandoning the infected body removed its physical night vision.")
+	TEST_ASSERT(!HAS_TRAIT(recipient, TRAIT_TRUE_NIGHT_VISION), "A departing mind carried the infected body's night vision into a healthy body.")
+	updates_before = patient.sight_updates
+	var/obj/item/organ/paradise_zombie_tumor/tumor = patient.get_organ_slot(ORGAN_SLOT_ZOMBIE)
+	TEST_ASSERT_NOTNULL(tumor, "The vision fixture has no real tumor to remove.")
+	tumor.Remove(patient)
+	TEST_ASSERT(!HAS_TRAIT(patient, TRAIT_TRUE_NIGHT_VISION), "Surgical cure retained the zombie's night vision.")
+	TEST_ASSERT(patient.sight_updates > updates_before, "Cure did not invoke the native sight update when removing night vision.")
+	TEST_ASSERT_EQUAL(patient.get_organ_slot(ORGAN_SLOT_EYES), original_eyes, "Curing night vision replaced the patient's actual eyes.")
+
+/** All production forms, plague servants and mapped corpses share source-owned vision and normal cleanup. */
+/datum/unit_test/paradise_zombie_night_vision_variants
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+
+/datum/unit_test/paradise_zombie_night_vision_variants/Run()
+	for(var/support_index in 1 to 7)
+		make_zombie(run_loc_floor_top_right)
+	GLOB.paradise_zombie_mutation_progression.first_infection_at = world.time - 20 MINUTES
+	for(var/form_id in list("slasher", "twitcher", "hunter", "brute", "spitter", "exploder"))
+		var/mob/living/carbon/human/host = make_zombie(run_loc_floor_bottom_left)
+		var/datum/component/paradise_zombie_mutation/controller = host.GetComponent(/datum/component/paradise_zombie_mutation)
+		TEST_ASSERT(controller.apply_form(form_id), "The night vision fixture could not apply its real [form_id] form.")
+		TEST_ASSERT(HAS_TRAIT(host, TRAIT_TRUE_NIGHT_VISION), "Applying [form_id] lost the body's night vision.")
+		var/datum/disease/paradise_zombie/infection = locate() in host.diseases
+		infection.cure()
+		TEST_ASSERT(!HAS_TRAIT(host, TRAIT_TRUE_NIGHT_VISION), "Curing [form_id] retained zombie night vision.")
+	var/mob/living/carbon/human/npc = allocate(/mob/living/basic/zombie)
+	TEST_ASSERT(HAS_TRAIT(npc, TRAIT_TRUE_NIGHT_VISION), "The mapped NPC corpse omitted native night vision.")
+	var/datum/disease/paradise_zombie/npc_infection = locate() in npc.diseases
+	npc_infection.cure()
+	TEST_ASSERT(!HAS_TRAIT(npc, TRAIT_TRUE_NIGHT_VISION), "Curing the mapped NPC retained zombie night vision.")
+	var/mob/living/carbon/human/servant = allocate(/mob/living/carbon/human/consistent)
+	ADD_TRAIT(servant, TRAIT_PARADISE_PLAGUE_ZOMBIE, PARADISE_ZOMBIE_TRAIT)
+	var/datum/disease/paradise_zombie/wizard/plague = new /datum/disease/paradise_zombie/wizard(/datum/disease/anxiety/paradise_plague, TRUE)
+	TEST_ASSERT(servant.ForceContractDisease(plague, make_copy = FALSE, del_on_fail = TRUE), "The plague servant could not receive its real magic infection.")
+	plague.process_infection_cycle()
+	TEST_ASSERT(HAS_TRAIT(servant, TRAIT_TRUE_NIGHT_VISION), "A mature magic plague servant omitted native night vision.")
+	plague.cure()
+	TEST_ASSERT(HAS_TRAIT(servant, TRAIT_TRUE_NIGHT_VISION), "A forbidden ordinary cure removed the magic servant's night vision.")
+	qdel(plague)
+	TEST_ASSERT(!HAS_TRAIT(servant, TRAIT_TRUE_NIGHT_VISION), "Forcibly clearing the magic infection retained its night vision.")
+
+/** Cure preserves the race's own night-vision eyes, their chosen settings and independent trait sources. */
+/datum/unit_test/paradise_zombie_night_vision_sources
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+
+/datum/unit_test/paradise_zombie_night_vision_sources/Run()
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
+	patient.set_species(/datum/species/mush)
+	var/datum/species/original_species = patient.dna.species
+	var/obj/item/organ/eyes/night_vision/mushroom/eyes = patient.get_organ_slot(ORGAN_SLOT_EYES)
+	TEST_ASSERT(istype(eyes), "The racial vision fixture has no native mushroom eyes.")
+	eyes.ui_action_click()
+	eyes.ui_action_click()
+	var/original_level = eyes.light_level
+	var/list/original_cutoffs = eyes.color_cutoffs.Copy()
+	ADD_TRAIT(patient, TRAIT_TRUE_NIGHT_VISION, MAGIC_TRAIT)
+	var/datum/disease/paradise_zombie/infection = new()
+	TEST_ASSERT(patient.ForceContractDisease(infection, make_copy = FALSE, del_on_fail = TRUE), "The racial vision fixture could not contract its real infection.")
+	infection.stage = 8
+	infection.process_infection_cycle()
+	var/datum/component/paradise_zombie_regen/regeneration = patient.GetComponent(/datum/component/paradise_zombie_regen)
+	TEST_ASSERT_NOTNULL(regeneration, "The racial vision fixture did not become a mature zombie.")
+	var/vision_source = REF(regeneration)
+	TEST_ASSERT(HAS_TRAIT_FROM(patient, TRAIT_TRUE_NIGHT_VISION, vision_source), "An existing vision source prevented the zombie's independent grant.")
+	infection.cure()
+	TEST_ASSERT(!HAS_TRAIT_FROM(patient, TRAIT_TRUE_NIGHT_VISION, vision_source), "Cure retained the zombie's own vision source.")
+	TEST_ASSERT(HAS_TRAIT_FROM(patient, TRAIT_TRUE_NIGHT_VISION, MAGIC_TRAIT), "Cure removed another source of true night vision.")
+	TEST_ASSERT_EQUAL(patient.dna.species, original_species, "Cure replaced the race supplying the patient's original vision.")
+	TEST_ASSERT_EQUAL(patient.get_organ_slot(ORGAN_SLOT_EYES), eyes, "Transformation or cure replaced native racial night-vision eyes.")
+	TEST_ASSERT_EQUAL(eyes.light_level, original_level, "Cure reset the racial eyes' chosen vision mode.")
+	for(var/index in 1 to 3)
+		TEST_ASSERT_EQUAL(eyes.color_cutoffs[index], original_cutoffs[index], "Transformation or cure overwrote the racial eyes' color cutoffs.")
+	REMOVE_TRAIT(patient, TRAIT_TRUE_NIGHT_VISION, MAGIC_TRAIT)
+	TEST_ASSERT(!HAS_TRAIT(patient, TRAIT_TRUE_NIGHT_VISION), "Removing the last independent source revealed leaked zombie night vision.")
+
 #endif

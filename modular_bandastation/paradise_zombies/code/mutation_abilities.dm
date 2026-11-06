@@ -215,6 +215,10 @@
 	travel_range = 10
 	pounce = TRUE
 
+/datum/action/cooldown/paradise_zombie_mutation/dash/proc/on_pounce_hit(mob/living/carbon/human/user, mob/living/victim)
+	victim.Knockdown(1 SECONDS)
+	log_combat(user, victim, "атаковал прыжком (мутация зомби Paradise)")
+
 /// Extends Paradise's existing scoped throw; no persistent mob impact hook is installed.
 /datum/thrownthing/paradise_zombie_leap/mutation
 	/// Weak ownership permits cure and body transfer to cancel a flight without retaining the action.
@@ -269,8 +273,7 @@
 	if(QDELETED(victim) || !LAZYACCESS(attack_modifiers, DAMAGE_DONE))
 		return
 	hit_enemy = TRUE
-	victim.Knockdown(1 SECONDS)
-	log_combat(user, victim, "атаковал прыжком (мутация зомби Paradise)")
+	action.on_pounce_hit(user, victim)
 
 /datum/thrownthing/paradise_zombie_leap/mutation/finalize(hit = FALSE, atom/target = null)
 	var/datum/action/cooldown/paradise_zombie_mutation/dash/action = action_ref?.resolve()
@@ -315,6 +318,7 @@
 	required_form = "spitter"
 	cooldown_time = 12 SECONDS
 	click_to_activate = TRUE
+	var/projectile_type = /obj/projectile/paradise_zombie_bile
 
 /// Pacifism blocks this attack at activation and while its delayed effects are resolving.
 /datum/action/cooldown/paradise_zombie_mutation/bile/is_active()
@@ -327,7 +331,7 @@
 		return FALSE
 	if(isliving(target) && !can_hit(target))
 		return FALSE
-	var/obj/projectile/paradise_zombie_bile/spit = new(get_turf(user))
+	var/obj/projectile/paradise_zombie_bile/spit = new projectile_type(get_turf(user))
 	spit.action_ref = WEAKREF(src)
 	spit.firer = user
 	spit.fired_from = src
@@ -350,6 +354,7 @@
 	speed = 0.8
 	/// The action owns this shot and any residue it creates.
 	var/datum/weakref/action_ref
+	var/puddle_type = /obj/effect/decal/cleanable/paradise_zombie_bile
 
 /obj/projectile/paradise_zombie_bile/can_hit_target(atom/target, direct_target = FALSE, ignore_loc = FALSE, cross_failed = FALSE)
 	var/datum/action/cooldown/paradise_zombie_mutation/action = action_ref?.resolve()
@@ -369,7 +374,7 @@
 	if(ishuman(target) && action.can_hit(target) && blocked < 100)
 		var/mob/living/carbon/human/victim = target
 		action.expose_target(victim)
-	var/obj/effect/decal/cleanable/paradise_zombie_bile/puddle = new(tile, action)
+	var/obj/effect/decal/cleanable/paradise_zombie_bile/puddle = new puddle_type(tile, action)
 	if(!QDELETED(puddle))
 		action.track_effect(puddle)
 
