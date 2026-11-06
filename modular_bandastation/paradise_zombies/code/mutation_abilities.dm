@@ -202,7 +202,8 @@
 	var/datum/thrownthing/paradise_zombie_leap/mutation/flight = user.throwing
 	flight.action_ref = WEAKREF(src)
 	track_effect(flight)
-	playsound(user, 'sound/items/weapons/punchmiss.ogg', 40, TRUE)
+	track_effect(new /obj/effect/temp_visual/small_smoke/halfsecond(get_turf(user)))
+	playsound(user, pounce ? 'modular_bandastation/paradise_zombies/sound/zombie_leap.ogg' : 'sound/items/weapons/thudswoosh.ogg', 40, TRUE)
 	StartCooldown()
 	return TRUE
 
@@ -217,7 +218,13 @@
 
 /datum/action/cooldown/paradise_zombie_mutation/dash/proc/on_pounce_hit(mob/living/carbon/human/user, mob/living/victim)
 	victim.Knockdown(1 SECONDS)
+	show_pounce_impact(user, victim)
 	log_combat(user, victim, "атаковал прыжком (мутация зомби Paradise)")
+
+/// Both Hunter impacts share flesh presentation without sharing their different restraint mechanics.
+/datum/action/cooldown/paradise_zombie_mutation/dash/proc/show_pounce_impact(mob/living/carbon/human/user, mob/living/victim)
+	new /obj/effect/temp_visual/dir_setting/bloodsplatter(get_turf(victim), get_dir(user, victim))
+	playsound(victim, 'sound/misc/moist_impact.ogg', 55, TRUE)
 
 /// Extends Paradise's existing scoped throw; no persistent mob impact hook is installed.
 /datum/thrownthing/paradise_zombie_leap/mutation
@@ -227,18 +234,34 @@
 	var/hit_enemy = FALSE
 	/// Suppress only the landing impulse made inside this throw's finalization.
 	var/finishing = FALSE
+	/// Cosmetic snapshots are limited to six, on every second real turf move.
+	var/visual_steps = 0
 
 /datum/thrownthing/paradise_zombie_leap/mutation/New(thrownthing, target, init_dir, maxrange, speed, thrower, diagonals_first, force, gentle, callback, target_zone)
 	. = ..()
 	RegisterSignal(thrownthing, COMSIG_MOVABLE_PRE_MOVE, PROC_REF(check_endpoint))
 	RegisterSignal(thrownthing, COMSIG_MOVABLE_PRE_THROW, PROC_REF(on_rethrow))
 	RegisterSignal(thrownthing, COMSIG_MOVABLE_SPACEMOVE, PROC_REF(stop_landing_impulse))
+	RegisterSignal(thrownthing, COMSIG_MOVABLE_MOVED, PROC_REF(on_flight_moved))
 
 /datum/thrownthing/paradise_zombie_leap/mutation/Destroy()
 	if(thrownthing)
-		UnregisterSignal(thrownthing, list(COMSIG_MOVABLE_PRE_MOVE, COMSIG_MOVABLE_PRE_THROW, COMSIG_MOVABLE_SPACEMOVE))
+		UnregisterSignal(thrownthing, list(COMSIG_MOVABLE_PRE_MOVE, COMSIG_MOVABLE_PRE_THROW, COMSIG_MOVABLE_SPACEMOVE, COMSIG_MOVABLE_MOVED))
 	action_ref = null
 	return ..()
+
+/// Copy the rendered mutation, never the human's hidden bodypart cache or live vis_contents.
+/datum/thrownthing/paradise_zombie_leap/mutation/proc/on_flight_moved(atom/movable/source, atom/old_loc)
+	SIGNAL_HANDLER
+	if(source.throwing != src || !isturf(old_loc) || !isturf(source.loc) || old_loc == source.loc || visual_steps >= 12)
+		return
+	var/datum/action/cooldown/paradise_zombie_mutation/dash/action = action_ref?.resolve()
+	if(!action?.is_active())
+		return
+	visual_steps++
+	if(visual_steps % 2)
+		return
+	action.track_effect(new /obj/effect/temp_visual/paradise_zombie_afterimage(old_loc, source, action.pounce ? "#BA5368" : "#C5C0B8"))
 
 /datum/thrownthing/paradise_zombie_leap/mutation/proc/check_endpoint(atom/movable/source)
 	SIGNAL_HANDLER
@@ -338,7 +361,7 @@
 	spit.def_zone = BODY_ZONE_CHEST
 	spit.aim_projectile(target, get_turf(user))
 	track_effect(spit)
-	playsound(user, 'sound/misc/moist_impact.ogg', 50, TRUE)
+	playsound(user, 'sound/mobs/non-humanoids/bileworm/bileworm_spit.ogg', 50, TRUE)
 	StartCooldown()
 	spit.fire()
 	return TRUE
@@ -352,6 +375,7 @@
 	armor_flag = BIO
 	range = 13
 	speed = 0.8
+	hitsound = 'sound/misc/moist_impact.ogg'
 	/// The action owns this shot and any residue it creates.
 	var/datum/weakref/action_ref
 	var/puddle_type = /obj/effect/decal/cleanable/paradise_zombie_bile
@@ -369,6 +393,8 @@
 	. = ..()
 	var/datum/action/cooldown/paradise_zombie_mutation/action = action_ref?.resolve()
 	var/turf/tile = get_turf(target)
+	if(action?.is_active() && tile)
+		new /obj/effect/temp_visual/paradise_zombie_splash(tile, color)
 	if(. == BULLET_ACT_BLOCK || !action?.is_active() || !isopenturf(tile))
 		return .
 	if(ishuman(target) && action.can_hit(target) && blocked < 100)
@@ -449,7 +475,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/explode
 	name = "Разрыв желчного узла"
 	desc = "Две секунды раздувать желчный узел, затем взорваться в радиусе 5 клеток. Попадание по открытому узлу срывает взрыв и ранит вас."
-	button_icon_state = "fireball"
+	button_icon_state = "gib"
 	required_form = "exploder"
 	cooldown_time = 20 SECONDS
 	/// The weak point exists only while a detonation is visibly preparing.
@@ -471,6 +497,8 @@
 	ruptured = FALSE
 	nodule = new(get_turf(user), src)
 	track_effect(nodule)
+	animate(nodule, transform = matrix().Scale(1.25), alpha = 210, time = 0.25 SECONDS, loop = 4)
+	animate(transform = matrix(), alpha = 255, time = 0.25 SECONDS)
 	StartCooldown()
 	user.visible_message(span_userdanger("Желчный узел [user] раздувается и готовится взорваться!"), span_userdanger("Наш желчный узел раздувается!"))
 	user.balloon_alert_to_viewers("готовится взорваться!")
@@ -500,6 +528,8 @@
 	nodule = null
 	var/mob/living/carbon/human/user = owner
 	user.apply_damage(40, BRUTE, BODY_ZONE_CHEST, wound_bonus = CANT_WOUND)
+	new /obj/effect/temp_visual/paradise_zombie_splash(get_turf(user), "#99BB22")
+	playsound(user, 'sound/misc/moist_impact.ogg', 60, TRUE)
 	user.visible_message(span_danger("Желчный узел [user] лопается — взрыв сорван!"))
 	log_combat(weakpoint, user, "разорвал мутационный узел")
 
@@ -507,8 +537,10 @@
 /datum/action/cooldown/paradise_zombie_mutation/explode/proc/detonate(mob/living/carbon/human/user)
 	if(!is_active() || QDELETED(user))
 		return
-	new /obj/effect/temp_visual/explosion(get_turf(user))
-	playsound(user, 'sound/effects/explosion/explosion1.ogg', 80, TRUE)
+	new /obj/effect/temp_visual/paradise_zombie_wave(get_turf(user), "#99BB22", 5)
+	for(var/direction in GLOB.alldirs)
+		new /obj/effect/temp_visual/dir_setting/bloodsplatter(get_turf(user), direction, "#99BB22")
+	playsound(user, 'modular_bandastation/paradise_zombies/sound/mutations/exploder_blast.ogg', 80, TRUE)
 	for(var/mob/living/victim in view(5, user))
 		if(!can_hit(victim))
 			continue

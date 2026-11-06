@@ -2,7 +2,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/tear_wall
 	name = "Выломать стену"
 	desc = "Выломать соседнюю стену в три этапа: обычную за 4 секунды, укреплённую за 12. Можно двигаться рядом со стеной; отход, потеря сознания и лечение прерывают работу."
-	button_icon_state = "mutate"
+	button_icon_state = "knock"
 	required_form = "brute"
 	cooldown_time = 0
 	click_to_activate = TRUE
@@ -38,7 +38,7 @@
 			break
 		var/rip_time = (istype(target, /turf/closed/wall/r_wall) ? 12 SECONDS : 4 SECONDS) / 3
 		user.visible_message(span_warning("[capitalize(user.declent_ru(NOMINATIVE))] начинает выламывать [target.declent_ru(ACCUSATIVE)]!"))
-		playsound(user, 'sound/machines/airlock/airlock_alien_prying.ogg', 100, TRUE)
+		playsound(user, 'sound/effects/wounds/crackandbleed.ogg', 60, TRUE)
 		target.balloon_alert(user, "выламываем...")
 		var/finished_step = do_after(user, rip_time, target = target, timed_action_flags = IGNORE_USER_LOC_CHANGE, extra_checks = CALLBACK(src, PROC_REF(can_tear), target), interaction_key = src)
 		if(QDELETED(src))
@@ -46,7 +46,12 @@
 		if(!finished_step || !can_tear(target))
 			break
 		user.do_attack_animation(target)
+		var/turf/wall_tile = get_turf(target)
+		var/wall_x = wall_tile.x
+		var/wall_y = wall_tile.y
+		var/wall_z = wall_tile.z
 		target.AddComponent(/datum/component/torn_wall)
+		new /obj/effect/temp_visual/small_smoke/halfsecond(locate(wall_x, wall_y, wall_z))
 		if(QDELETED(target) || !isclosedturf(target))
 			completed = TRUE
 			break

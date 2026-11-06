@@ -2,12 +2,15 @@
 /datum/action/cooldown/paradise_zombie_mutation/bile/acid
 	name = "Кислотный плевок"
 	desc = "Плюнуть кислотой до 13 клеток. Попадание оставляет на 12 секунд смываемые лужи в пределах одной клетки. Они обжигают стоящих в них противников на 4 единицы в секунду до учёта биологической защиты."
+	button_icon = 'icons/mob/actions/actions_xeno.dmi'
+	button_icon_state = "alien_acid"
 	cooldown_time = 20 SECONDS
 	projectile_type = /obj/projectile/paradise_zombie_bile/acid
 
 /obj/projectile/paradise_zombie_bile/acid
 	name = "кислотная желчь"
 	color = "#66CC22"
+	hitsound = 'sound/effects/wounds/sizzle2.ogg'
 	puddle_type = /obj/effect/decal/cleanable/paradise_zombie_bile/acid
 
 /obj/projectile/paradise_zombie_bile/acid/on_hit(atom/target, blocked = 0, pierce_hit)
@@ -27,11 +30,16 @@
 /obj/effect/decal/cleanable/paradise_zombie_bile/acid
 	name = "кислотная желчь"
 	desc = "Едкая лужа обжигает живых противников, пока они находятся в ней. Её можно смыть."
+	icon = 'icons/effects/acid.dmi'
+	icon_state = "default"
 	color = "#66CC22"
+	alpha = 225
 
 /obj/effect/decal/cleanable/paradise_zombie_bile/acid/Initialize(mapload, datum/action/cooldown/paradise_zombie_mutation/action)
 	. = ..()
 	if(. != INITIALIZE_HINT_QDEL)
+		animate(src, transform = matrix().Scale(1.03), alpha = 235, time = 0.6 SECONDS, loop = -1)
+		animate(transform = matrix().Scale(0.97), alpha = 205, time = 0.6 SECONDS)
 		START_PROCESSING(SSprocessing, src)
 
 /obj/effect/decal/cleanable/paradise_zombie_bile/acid/Destroy()

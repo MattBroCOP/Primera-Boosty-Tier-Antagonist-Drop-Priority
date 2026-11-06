@@ -19,11 +19,16 @@
 	var/mob/living/user = owner
 	previous_health = user.health
 	RegisterSignal(owner, COMSIG_LIVING_HEALTH_UPDATE, PROC_REF(on_owner_health_changed))
-	RegisterSignals(owner, list(SIGNAL_ADDTRAIT(TRAIT_INCAPACITATED), COMSIG_LIVING_SET_BODY_POSITION), PROC_REF(on_owner_interrupted))
 
 /datum/action/cooldown/paradise_zombie_mutation/tongue/Remove(mob/removed_from)
-	UnregisterSignal(removed_from, list(COMSIG_MOB_AFTER_APPLY_DAMAGE, COMSIG_LIVING_HEALTH_UPDATE, SIGNAL_ADDTRAIT(TRAIT_INCAPACITATED), COMSIG_LIVING_SET_BODY_POSITION))
+	UnregisterSignal(removed_from, list(COMSIG_MOB_AFTER_APPLY_DAMAGE, COMSIG_LIVING_HEALTH_UPDATE))
 	return ..()
+
+/// Reuse the action's existing status listeners so cancellation preserves native HUD updates.
+/datum/action/cooldown/paradise_zombie_mutation/tongue/update_status_on_signal(datum/source, new_stat, old_stat)
+	. = ..()
+	if(!is_active())
+		clear_effects()
 
 /datum/action/cooldown/paradise_zombie_mutation/tongue/is_active()
 	if(!..() || HAS_TRAIT(owner, TRAIT_PACIFISM) || HAS_TRAIT(owner, TRAIT_INCAPACITATED))
@@ -49,6 +54,9 @@
 	tongue.aim_projectile(target, get_turf(user))
 	track_effect(tongue)
 	StartCooldown()
+	playsound(user, 'sound/items/weapons/whip.ogg', 55, TRUE)
+	var/obj/effect/temp_visual/paradise_zombie_wave/mouth_wave = new(get_turf(user), BLOOD_COLOR_RED, 0.85)
+	mouth_wave.pixel_y += 10
 	tongue.fire()
 	return TRUE
 
@@ -70,7 +78,7 @@
 	damage = 0
 	range = 8
 	speed = 0.7
-	hitsound = 'sound/items/weapons/shove.ogg'
+	hitsound = 'modular_bandastation/paradise_zombies/sound/mutations/slasher_attack.ogg'
 	/// The physical mutation owns both the outgoing tongue and its short return flight.
 	var/datum/weakref/action_ref
 	var/datum/beam/tongue_beam
@@ -79,9 +87,12 @@
 /obj/projectile/paradise_zombie_tongue/is_hostile_projectile()
 	return TRUE
 
+/obj/projectile/paradise_zombie_tongue/vol_by_damage()
+	return suppressed ? ..() : 45
+
 /obj/projectile/paradise_zombie_tongue/fire(setAngle)
 	if(firer)
-		tongue_beam = firer.Beam(src, icon_state = "tentacle", emissive = NONE)
+		tongue_beam = firer.Beam(src, icon_state = "tentacle", beam_color = "#8A263C", emissive = NONE)
 	return ..()
 
 /obj/projectile/paradise_zombie_tongue/Destroy()
@@ -115,8 +126,12 @@
 		return BULLET_ACT_BLOCK
 	var/datum/thrownthing/paradise_zombie_tongue/flight = victim.throwing
 	flight.action_ref = WEAKREF(action)
-	flight.tongue_beam = user.Beam(victim, icon_state = "tentacle", emissive = NONE)
+	flight.tongue_beam = user.Beam(victim, icon_state = "tentacle", beam_color = "#8A263C", emissive = NONE)
 	action.track_effect(flight)
+	var/hit_direction = get_dir(user, victim)
+	for(var/spray_direction in list(turn(hit_direction, 45), turn(hit_direction, -45)))
+		new /obj/effect/temp_visual/dir_setting/bloodsplatter(get_turf(victim), spray_direction)
+	new /obj/effect/temp_visual/paradise_zombie_splash(get_turf(victim), BLOOD_COLOR_RED)
 	victim.visible_message(span_danger("Язык [user.declent_ru(GENITIVE)] подхватывает [victim.declent_ru(ACCUSATIVE)] и тянет к себе!"), span_userdanger("Язык [user.declent_ru(GENITIVE)] подхватывает и тянет вас!"))
 
 /** Native collision-checked movement ends adjacent to the caster and never becomes a lasting hold. */

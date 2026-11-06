@@ -18,6 +18,7 @@
 #include "code/mutation_forms.dm"
 #include "code/mutation_progression.dm"
 #include "code/mutation_body.dm"
+#include "code/mutation_effects.dm"
 #include "code/mutation_abilities.dm"
 #include "code/scream.dm"
 #include "code/mutation_brute.dm"

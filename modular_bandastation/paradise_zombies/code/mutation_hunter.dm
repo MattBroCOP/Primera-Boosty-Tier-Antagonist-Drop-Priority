@@ -2,7 +2,7 @@
 /datum/action/cooldown/paradise_zombie_mutation/dash/pounce/pin
 	name = "Прыжок с захватом"
 	desc = "С выпущенными когтями прыгнуть до 10 клеток и прижать жертву максимум на четыре секунды, нанося 3 единицы урона в секунду до учёта брони. Сопротивление, помощь союзника, ваше движение или полученный урон прерывают захват."
-	button_icon_state = "mutate"
+	button_icon_state = "the_traps"
 
 /datum/action/cooldown/paradise_zombie_mutation/dash/pounce/pin/is_active()
 	return ..() && !HAS_TRAIT(owner, TRAIT_PACIFISM)
@@ -23,6 +23,7 @@
 	if(!pin)
 		return
 	track_effect(pin)
+	show_pounce_impact(user, victim)
 	log_combat(user, victim, "прижал прыжком (мутация зомби Paradise)")
 
 /** The victim owns this short grace period, so removing a captor cannot refund a second capture. */

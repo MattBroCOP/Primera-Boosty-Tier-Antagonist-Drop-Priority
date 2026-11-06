@@ -2,7 +2,8 @@
 /datum/action/cooldown/paradise_zombie_mutation/vomit_bile
 	name = "Извергнуть желчь"
 	desc = "Выплеснуть видимую желчь до 5 клеток. Попадание полностью закрывает зрение на 5 секунд; желчь можно смыть с лица. Преграды и полная биозащита останавливают попадание. Зомби не страдают. Перезарядка — 20 секунд."
-	button_icon_state = "smoke"
+	button_icon = 'icons/mob/actions/actions_xeno.dmi'
+	button_icon_state = "alien_neurotoxin"
 	required_form = "exploder"
 	cooldown_time = 20 SECONDS
 	click_to_activate = TRUE
@@ -24,7 +25,8 @@
 	shot.def_zone = BODY_ZONE_HEAD
 	shot.aim_projectile(target, get_turf(user))
 	track_effect(shot)
-	playsound(user, 'sound/misc/moist_impact.ogg', 50, TRUE)
+	new /obj/effect/temp_visual/paradise_zombie_wave(get_turf(user), "#BBAA22", 0.8)
+	playsound(user, 'sound/mobs/humanoids/human/gag_vomit/crack_vomit.ogg', 55, TRUE)
 	StartCooldown()
 	shot.fire()
 	return TRUE
@@ -33,6 +35,7 @@
 	name = "густая желчь"
 	icon_state = "neurotoxin"
 	color = "#BBAA22"
+	hitsound = 'sound/misc/moist_impact.ogg'
 	damage = 0
 	armor_flag = BIO
 	range = 5
@@ -51,6 +54,9 @@
 /obj/projectile/paradise_zombie_boomer_vomit/on_hit(atom/target, blocked = 0, pierce_hit)
 	. = ..()
 	var/datum/action/cooldown/paradise_zombie_mutation/action = action_ref?.resolve()
+	var/turf/impact_tile = get_turf(target)
+	if(. != BULLET_ACT_BLOCK && action?.is_active() && impact_tile)
+		new /obj/effect/temp_visual/paradise_zombie_splash(impact_tile, "#BBAA22")
 	if(. == BULLET_ACT_BLOCK || blocked >= 100 || !action?.is_active() || !isliving(target) || !action.can_hit(target))
 		return .
 	var/mob/living/victim = target

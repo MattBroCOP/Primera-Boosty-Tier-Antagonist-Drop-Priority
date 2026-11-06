@@ -164,4 +164,38 @@
 			action = locate() in host.actions
 			TEST_ASSERT_NOTNULL(action, "Returning to the still-mutated body did not restore its tongue action.")
 
+/** Existing action status listeners must update the real HUD button and cancel the same native flight. */
+/datum/unit_test/paradise_zombie_smoker_status_buttons
+	parent_type = /datum/unit_test/paradise_zombie_smoker_test
+
+/datum/unit_test/paradise_zombie_smoker_status_buttons/Run()
+	TEST_ASSERT(prepare_smoker(), "The status-button fixture was not prepared.")
+	host.set_hud_used(new host.hud_type(host))
+	action.ShowTo(host)
+	var/atom/movable/screen/movable/action_button/button = action.viewers[host.hud_used]
+	TEST_ASSERT_NOTNULL(button, "The native tongue action did not create a real HUD button.")
+	var/turf/victim_start = get_turf(victim)
+	for(var/scenario in list("stun", "knockdown"))
+		victim.forceMove(victim_start)
+		var/datum/thrownthing/paradise_zombie_tongue/flight = launch_yank()
+		TEST_ASSERT_NOTNULL(flight, "The [scenario] status test never began an actual yank.")
+		// Isolate availability coloring from the already verified eighteen-second cooldown.
+		action.ResetCooldown()
+		TEST_ASSERT(action.IsAvailable(), "The active fixture is unavailable before its [scenario] interruption.")
+		var/ready_color = button.color
+		if(scenario == "stun")
+			host.Stun(2 SECONDS)
+		else
+			host.Knockdown(2 SECONDS)
+		TEST_ASSERT(QDELETED(flight), "The inherited [scenario] listener did not cancel the actual tongue flight.")
+		TEST_ASSERT(!action.IsAvailable(), "The tongue remains available during [scenario].")
+		TEST_ASSERT_NOTEQUAL(button.color, ready_color, "The [scenario] callback replaced the native unavailable-button update.")
+		if(scenario == "stun")
+			host.SetStun(0)
+		else
+			host.SetKnockdown(0)
+			host.get_up(TRUE)
+		TEST_ASSERT(action.IsAvailable(), "The tongue did not become available after [scenario] ended.")
+		TEST_ASSERT_EQUAL(button.color, ready_color, "The inherited recovery listener did not restore the native button color after [scenario].")
+
 #endif

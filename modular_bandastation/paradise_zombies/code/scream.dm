@@ -40,7 +40,8 @@
 		return FALSE
 	StartCooldown()
 	owner.visible_message(span_danger("[owner] издаёт голодный крик!"))
-	playsound(owner, 'modular_bandastation/paradise_zombies/sound/zomboidalert.ogg', 70, TRUE)
+	new /obj/effect/temp_visual/paradise_zombie_wave(get_turf(user), "#7A1830", 5)
+	playsound(owner, 'sound/effects/hallucinations/growl2.ogg', 65, TRUE)
 	for(var/mob/living/victim in view(5, owner))
 		if(victim != owner)
 			victim.apply_status_effect(/datum/status_effect/paradise_zombie_scream/fear)
