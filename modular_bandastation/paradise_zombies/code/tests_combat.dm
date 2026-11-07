@@ -43,6 +43,81 @@
 		SSshuttle.shuttle_purchase_requirements_met[SHUTTLE_UNLOCK_TOMBSTONE] = previous_shuttle_unlock
 	return .
 
+/// Ordinary controls stay blocked with either empty hands or extended claws until the body is cured.
+/datum/unit_test/paradise_zombie_object_interactions
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+	var/obj/machinery/button/button
+	var/button_presses = 0
+
+/datum/unit_test/paradise_zombie_object_interactions/Run()
+	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
+	user.mind_initialize()
+	user.set_combat_mode(FALSE)
+	button = allocate(/obj/machinery/button, get_step(user, EAST))
+	button.set_machine_stat(button.machine_stat & ~NOPOWER)
+	button.set_panel_open(FALSE)
+	RegisterSignal(SSdcs, COMSIG_GLOB_BUTTON_PRESSED, PROC_REF(on_button_pressed))
+	var/obj/structure/closet/locker = allocate(/obj/structure/closet, get_step(user, NORTH))
+	var/obj/machinery/sleeper/sleeper = allocate(/obj/machinery/sleeper, get_step(user, NORTHEAST))
+	var/datum/tgui/old_ui = allocate(/datum/tgui, user, sleeper, "Sleeper")
+	click_wrapper(user, button)
+	TEST_ASSERT_EQUAL(button_presses, 1, "The ordinary human did not operate the real button.")
+	var/obj/item/flashlight/flashlight = allocate(/obj/item/flashlight)
+	TEST_ASSERT(user.put_in_hands(flashlight), "The human could not hold the flashlight fixture.")
+	var/datum/action/item_action/toggle_light/toggle_light = locate() in user.actions
+	TEST_ASSERT_NOTNULL(toggle_light, "The flashlight fixture did not grant its real action button.")
+	ADD_TRAIT(flashlight, TRAIT_NODROP, TRAIT_SOURCE_UNIT_TESTS)
+
+	var/datum/disease/paradise_zombie/infection = new()
+	TEST_ASSERT(user.ForceContractDisease(infection, make_copy = FALSE, del_on_fail = TRUE), "The fixture did not contract the plague.")
+	infection.stage = 8
+	infection.process_infection_cycle()
+	TEST_ASSERT(HAS_TRAIT(user, TRAIT_PARADISE_ZOMBIE), "The fixture did not transform.")
+	user.set_combat_mode(FALSE)
+	TEST_ASSERT(user.is_holding(flashlight), "Transformation removed the fixture's stuck item.")
+	user.execute_mode()
+	TEST_ASSERT(!flashlight.light_on, "The use-item hotkey operated a stuck flashlight after transformation.")
+	toggle_light.Trigger(user)
+	TEST_ASSERT(!flashlight.light_on, "The action button operated a flashlight after transformation.")
+	REMOVE_TRAIT(flashlight, TRAIT_NODROP, TRAIT_SOURCE_UNIT_TESTS)
+	TEST_ASSERT(user.dropItemToGround(flashlight), "The released flashlight could not be dropped.")
+	click_wrapper(user, button)
+	click_wrapper(user, locker, list(RIGHT_CLICK = 1))
+	click_wrapper(user, locker)
+	TEST_ASSERT_EQUAL(button_presses, 1, "A zombie pressed the button with an empty hand.")
+	TEST_ASSERT(!locker.opened, "A zombie opened a locker with its hands.")
+	TEST_ASSERT(!button.can_interact(user), "The machine's direct interaction check still permitted the zombie.")
+	click_wrapper(user, sleeper, list(ALT_CLICK = 1))
+	TEST_ASSERT(sleeper.state_open, "Alt-click toggled a machine for the zombie.")
+	old_ui.on_act_message("door", list(), old_ui.state)
+	TEST_ASSERT(sleeper.state_open, "An already queued UI action operated the machine after transformation.")
+	old_ui.process_status()
+	TEST_ASSERT_EQUAL(old_ui.status, UI_CLOSE, "The open machine UI was not closed after transformation.")
+
+	var/datum/action/cooldown/paradise_zombie_claws/claws = locate() in user.actions
+	TEST_ASSERT(claws?.Activate(), "The zombie could not extend its claws.")
+	click_wrapper(user, button)
+	TEST_ASSERT_EQUAL(button_presses, 1, "The zombie's claws operated the button instead of attacking.")
+	var/integrity_before = locker.get_integrity()
+	click_wrapper(user, locker)
+	TEST_ASSERT(locker.get_integrity() < integrity_before, "Claws could not damage a real object through the click path.")
+	TEST_ASSERT(!locker.opened && claws.Activate(), "Claw combat opened the locker or blocked retraction.")
+	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent, get_step(user, SOUTH))
+	click_wrapper(user, victim, list(CTRL_CLICK = 1))
+	TEST_ASSERT_EQUAL(user.pulling, victim, "The restriction prevented a zombie from grabbing a victim.")
+	user.stop_pulling()
+
+	infection.cure()
+	click_wrapper(user, button)
+	click_wrapper(user, locker)
+	TEST_ASSERT_EQUAL(button_presses, 2, "Cure did not restore the ability to operate the button.")
+	TEST_ASSERT(locker.opened, "Cure did not restore hand interaction with the locker.")
+
+/datum/unit_test/paradise_zombie_object_interactions/proc/on_button_pressed(datum/source, obj/machinery/button/pressed)
+	SIGNAL_HANDLER
+	if(pressed == button)
+		button_presses++
+
 /// Exercise the actual ability, including the two-handed component and item retraction.
 /datum/unit_test/paradise_zombie_claw_action/Run()
 	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
@@ -157,6 +232,7 @@
 	TEST_ASSERT(LIMB_HAS_SURGERY_STATE(head, SURGERY_SKIN_OPEN|SURGERY_BONE_SAWED), "Claw attacks did not open the damaged skull for feeding.")
 	claws.attack_self(user)
 	TEST_ASSERT_EQUAL(length(user.get_held_items()), 0, "The feeding fixture still holds its claws.")
+	user.add_or_update_variable_actionspeed_modifier(/datum/actionspeed_modifier/base, multiplicative_slowdown = 1)
 	var/brain_damage_before = target.get_organ_loss(ORGAN_SLOT_BRAIN)
 	user.UnarmedAttack(target, TRUE, list())
 	TEST_ASSERT(combat.eating, "The pacifism fixture did not enter the actual feeding action.")

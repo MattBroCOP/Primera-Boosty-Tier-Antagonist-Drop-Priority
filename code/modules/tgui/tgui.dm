@@ -337,7 +337,10 @@
  */
 /datum/tgui/proc/process_status()
 	var/prev_status = status
-	status = src_object.ui_status(user, state)
+	if(HAS_TRAIT(user, TRAIT_PARADISE_ZOMBIE) && isobj(src_object.ui_host(user)))
+		status = UI_CLOSE
+	else
+		status = src_object.ui_status(user, state)
 	return prev_status != status
 
 /**
@@ -392,6 +395,8 @@
 /// Wrapper for behavior to potentially wait until the next tick if the server is overloaded
 /datum/tgui/proc/on_act_message(act_type, payload, state)
 	if(QDELETED(src) || QDELETED(src_object))
+		return
+	if(HAS_TRAIT(user, TRAIT_PARADISE_ZOMBIE) && isobj(src_object.ui_host(user)))
 		return
 	if(src_object.ui_act(act_type, payload, src, state))
 		SStgui.update_uis(src_object)

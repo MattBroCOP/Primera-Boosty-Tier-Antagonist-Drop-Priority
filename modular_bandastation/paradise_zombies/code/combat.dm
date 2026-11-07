@@ -14,7 +14,7 @@
 		return FALSE
 	return target.ForceContractDisease(infection, make_copy = FALSE, del_on_fail = TRUE)
 
-/// Gives Paradise zombies their grab bites, brain eating and resistance to traumatic amputation.
+/// Gives Paradise zombies their physical abilities and limits what they can use.
 /datum/component/paradise_zombie_combat
 	dupe_mode = COMPONENT_DUPE_UNIQUE
 	/// Prevent overlapping brain-eating actions from bypassing the one-second delay.
@@ -28,9 +28,59 @@
 	RegisterSignal(parent, COMSIG_LIVING_UNARMED_ATTACK, PROC_REF(on_unarmed_attack))
 	RegisterSignal(parent, COMSIG_CARBON_PRE_DISMEMBER, PROC_REF(on_dismember))
 	RegisterSignal(parent, COMSIG_MOB_SAY, PROC_REF(on_say))
+	RegisterSignal(parent, COMSIG_MOB_CLICKON, PROC_REF(on_click))
+	RegisterSignal(parent, COMSIG_TRY_USE_MACHINE, PROC_REF(on_try_use_machine))
+	RegisterSignal(parent, COMSIG_TRY_WIRES_INTERACT, PROC_REF(on_try_use_wires))
+	RegisterSignal(parent, COMSIG_LIVING_TRY_PUT_IN_HAND, PROC_REF(restrict_hands))
+	var/mob/living/zombie = parent
+	for(var/obj/item/held_item in zombie.get_held_items())
+		if(!(held_item.item_flags & ABSTRACT))
+			zombie.dropItemToGround(held_item)
 
 /datum/component/paradise_zombie_combat/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_LIVING_UNARMED_ATTACK, COMSIG_CARBON_PRE_DISMEMBER, COMSIG_MOB_SAY))
+	UnregisterSignal(parent, list(
+		COMSIG_LIVING_UNARMED_ATTACK,
+		COMSIG_CARBON_PRE_DISMEMBER,
+		COMSIG_MOB_SAY,
+		COMSIG_MOB_CLICKON,
+		COMSIG_TRY_USE_MACHINE,
+		COMSIG_TRY_WIRES_INTERACT,
+		COMSIG_LIVING_TRY_PUT_IN_HAND,
+	))
+
+/datum/component/paradise_zombie_combat/proc/on_click(mob/living/source, atom/target, list/modifiers)
+	SIGNAL_HANDLER
+	if(!HAS_TRAIT(source, TRAIT_PARADISE_ZOMBIE) || istype(target, /atom/movable/screen))
+		return
+	if(LAZYACCESS(modifiers, ALT_CLICK) || (LAZYACCESS(modifiers, CTRL_CLICK) && !isliving(target)))
+		return COMSIG_MOB_CANCEL_CLICKON
+	if(LAZYACCESS(modifiers, MIDDLE_CLICK) || LAZYACCESS(modifiers, CTRL_CLICK))
+		return
+	if(LAZYACCESS(modifiers, SHIFT_CLICK))
+		if(isobj(target))
+			// Some objects use Shift-click to manipulate contents instead of examining them.
+			if(source.client)
+				INVOKE_ASYNC(source, TYPE_PROC_REF(/mob, run_examinate), target)
+			return COMSIG_MOB_CANCEL_CLICKON
+		return
+	var/obj/item/held_item = source.get_active_held_item()
+	if((isobj(target) || held_item) && !istype(held_item, /obj/item/paradise_zombie_claw))
+		return COMSIG_MOB_CANCEL_CLICKON
+
+/datum/component/paradise_zombie_combat/proc/on_try_use_machine(mob/living/source)
+	SIGNAL_HANDLER
+	if(HAS_TRAIT(source, TRAIT_PARADISE_ZOMBIE))
+		return COMPONENT_CANT_USE_MACHINE_INTERACT
+
+/datum/component/paradise_zombie_combat/proc/on_try_use_wires(mob/living/source)
+	SIGNAL_HANDLER
+	if(HAS_TRAIT(source, TRAIT_PARADISE_ZOMBIE))
+		return COMPONENT_CANT_INTERACT_WIRES
+
+/datum/component/paradise_zombie_combat/proc/restrict_hands(mob/living/source, obj/item/item)
+	SIGNAL_HANDLER
+	if(!(item.item_flags & ABSTRACT))
+		return COMPONENT_LIVING_CANT_PUT_IN_HAND
 
 /datum/component/paradise_zombie_combat/proc/on_say(mob/living/source, list/speech_args)
 	SIGNAL_HANDLER
@@ -48,7 +98,11 @@
 
 /datum/component/paradise_zombie_combat/proc/on_unarmed_attack(mob/living/carbon/human/source, atom/target, proximity, list/modifiers)
 	SIGNAL_HANDLER
-	if(!HAS_TRAIT(source, TRAIT_PARADISE_ZOMBIE) || !proximity || !source.combat_mode || HAS_TRAIT(source, TRAIT_PACIFISM) || LAZYACCESS(modifiers, RIGHT_CLICK) || !ishuman(target))
+	if(!HAS_TRAIT(source, TRAIT_PARADISE_ZOMBIE))
+		return NONE
+	if(isobj(target))
+		return COMPONENT_CANCEL_ATTACK_CHAIN
+	if(!proximity || !source.combat_mode || HAS_TRAIT(source, TRAIT_PACIFISM) || LAZYACCESS(modifiers, RIGHT_CLICK) || !ishuman(target))
 		return NONE
 	var/mob/living/carbon/human/victim = target
 	if(source.pulling == victim)

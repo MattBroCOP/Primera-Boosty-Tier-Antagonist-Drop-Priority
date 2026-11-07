@@ -793,6 +793,8 @@ GAME_VERB_CONTEXT(/mob, examinate, "Examine", "", null, /atom)
 
 	var/obj/item/I = get_active_held_item()
 	if(I)
+		if(HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE) && !istype(I, /obj/item/paradise_zombie_claw))
+			return
 		I.attack_self(src)
 		update_held_items()
 		return

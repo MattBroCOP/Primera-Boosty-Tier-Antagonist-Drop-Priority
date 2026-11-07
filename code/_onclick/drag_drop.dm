@@ -28,6 +28,8 @@
 	SHOULD_NOT_OVERRIDE(TRUE)
 
 	var/mob/user = usr
+	if(HAS_TRAIT(user, TRAIT_PARADISE_ZOMBIE) && (isobj(src) || isobj(over)))
+		return
 
 	if(SEND_SIGNAL(src, COMSIG_MOUSEDROP_ONTO, over, user) & COMPONENT_CANCEL_MOUSEDROP_ONTO)
 		return

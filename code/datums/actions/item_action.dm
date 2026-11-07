@@ -23,6 +23,11 @@
 		else
 			qdel(GetComponent(/datum/component/action_item_overlay))
 
+/datum/action/item_action/IsAvailable(feedback = FALSE)
+	if(HAS_TRAIT(owner, TRAIT_PARADISE_ZOMBIE) && !isorgan(target))
+		return FALSE
+	return ..()
+
 /datum/action/item_action/Trigger(mob/clicker, trigger_flags)
 	. = ..()
 	if(!.)

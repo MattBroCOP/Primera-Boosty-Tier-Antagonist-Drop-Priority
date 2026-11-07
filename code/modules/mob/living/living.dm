@@ -588,9 +588,7 @@ GAME_VERB_HIDDEN(/mob/living, succumb, "succumb")
 	return incap_status
 
 /mob/living/canUseStorage()
-	if (usable_hands <= 0)
-		return FALSE
-	return TRUE
+	return usable_hands > 0 && !HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE)
 
 
 //This proc is used for mobs which are affected by pressure to calculate the amount of pressure that actually
@@ -1360,6 +1358,8 @@ GAME_VERB_PROC(/mob/living, mob_sleep, "Sleep", null)
 /mob/living/can_perform_action(atom/target, action_bitflags)
 	if(!istype(target))
 		CRASH("Missing target arg for can_perform_action")
+	if(isobj(target) && HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE))
+		return FALSE
 
 	if(IS_UNCONSCIOUS_OR_CRIT(src))
 		to_chat(src, span_warning("Вы должны быть дееспособны!"))

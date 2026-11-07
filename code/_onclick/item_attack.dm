@@ -22,6 +22,10 @@
  * * list/attack_modifiers - attack modifiers such as force, damage type, etc. Only used in attacks
  */
 /obj/item/proc/melee_attack_chain(mob/user, atom/target, list/modifiers, list/attack_modifiers = list())
+	var/zombie_attack = HAS_TRAIT(user, TRAIT_PARADISE_ZOMBIE)
+	if(zombie_attack && !istype(src, /obj/item/paradise_zombie_claw))
+		return FALSE
+
 	//Proxy replaces src cause it returns an atom that will attack the target on our behalf
 	var/obj/item/source_atom = get_proxy_attacker_for(target, user)
 	if(source_atom != src) //if we are someone else then call that attack chain else we can proceed with the usual stuff
@@ -29,11 +33,13 @@
 
 	var/is_right_clicking = LAZYACCESS(modifiers, RIGHT_CLICK)
 
-	var/item_interact_result = target.base_item_interaction(user, src, modifiers)
-	if(item_interact_result & ITEM_INTERACT_SUCCESS)
-		return TRUE
-	if(item_interact_result & ITEM_INTERACT_BLOCKING)
-		return FALSE
+	// Claws can damage equipment, but can't operate it through the item interaction chain.
+	if(!zombie_attack)
+		var/item_interact_result = target.base_item_interaction(user, src, modifiers)
+		if(item_interact_result & ITEM_INTERACT_SUCCESS)
+			return TRUE
+		if(item_interact_result & ITEM_INTERACT_BLOCKING)
+			return FALSE
 
 	// At this point it means we're not doing a non-combat interaction so let's just try to bash it
 

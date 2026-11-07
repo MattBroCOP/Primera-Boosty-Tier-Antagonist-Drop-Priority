@@ -46,12 +46,8 @@
 	ADD_TRAIT(zombie, TRAIT_NOBREATH, REF(src))
 	MODIFY_PHYSIOLOGY(zombie, STAMINA, 0.5)
 	zombie.LoadComponent(/datum/component/paradise_zombie_combat)
-	RegisterSignal(zombie, COMSIG_LIVING_TRY_PUT_IN_HAND, PROC_REF(restrict_hands))
 	RegisterSignal(zombie, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(update_slowdown))
 	update_slowdown(zombie, zombie.body_position)
-	for(var/obj/item/held_item in zombie.get_held_items())
-		if(!(held_item.item_flags & ABSTRACT))
-			zombie.dropItemToGround(held_item)
 	var/datum/disease/paradise_zombie/infection = locate() in zombie.diseases
 	var/datum/action/cooldown/paradise_zombie_claws/claws
 	if(HAS_TRAIT(zombie, TRAIT_PARADISE_PLAGUE_ZOMBIE))
@@ -82,7 +78,7 @@
 		handle_clown_mutation(zombie, "К вам возвращается чувство юмора.", removing = FALSE)
 	REMOVE_TRAIT(zombie, TRAIT_NOBREATH, REF(src))
 	MODIFY_PHYSIOLOGY(zombie, STAMINA, 2)
-	UnregisterSignal(zombie, list(COMSIG_LIVING_TRY_PUT_IN_HAND, COMSIG_LIVING_SET_BODY_POSITION))
+	UnregisterSignal(zombie, COMSIG_LIVING_SET_BODY_POSITION)
 	zombie.remove_movespeed_modifier(/datum/movespeed_modifier/paradise_zombie)
 	if(!HAS_TRAIT(zombie, TRAIT_PARADISE_ZOMBIE))
 		qdel(zombie.GetComponent(/datum/component/paradise_zombie_combat))
@@ -98,11 +94,6 @@
 		owner.remove_antag_datum(type)
 		return
 	return ..()
-
-/datum/antagonist/paradise_zombie/proc/restrict_hands(mob/living/source, obj/item/item)
-	SIGNAL_HANDLER
-	if(!(item.item_flags & ABSTRACT))
-		return COMPONENT_LIVING_CANT_PUT_IN_HAND
 
 /datum/antagonist/paradise_zombie/proc/update_slowdown(mob/living/source, new_position)
 	SIGNAL_HANDLER
