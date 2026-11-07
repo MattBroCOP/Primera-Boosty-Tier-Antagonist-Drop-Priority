@@ -164,8 +164,6 @@
 		organ.organ_flags &= ~ORGAN_EMP
 	for(var/obj/item/bodypart/limb as anything in zombie.get_bodyparts())
 		limb.heal_damage(1000, 1000)
-		var/datum/component/paradise_zombie_limb/rot = limb.GetComponent(/datum/component/paradise_zombie_limb)
-		rot?.necrotize()
 	zombie.set_heartattack(FALSE)
 	zombie.restore_blood()
 	zombie.update_body_parts()

@@ -174,10 +174,11 @@
 	var/mob/living/carbon/human/dummy = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/book_of_babel/book = allocate(/obj/item/book_of_babel)
 	var/datum/language_holder/holder = dummy.get_language_holder()
-	var/expected_amount = length(GLOB.all_languages)
+	var/expected_amount = length(GLOB.all_languages - /datum/language/paradise_zombie)
 
 	book.attack_self(dummy)
-	TEST_ASSERT_EQUAL(length(holder.spoken_languages), expected_amount, "Book of Babel failed to give all languages out!")
+	TEST_ASSERT_EQUAL(length(holder.spoken_languages), expected_amount, "Book of Babel did not grant every unrestricted language.")
+	TEST_ASSERT(!dummy.has_language(/datum/language/paradise_zombie), "Book of Babel granted access to zombie speech.")
 	dummy.set_species(/datum/species/lizard)
 	TEST_ASSERT_EQUAL(length(holder.spoken_languages), expected_amount, "Changing species after using the Book of Bable should not remove languages!")
 

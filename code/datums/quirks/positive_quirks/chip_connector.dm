@@ -25,4 +25,5 @@
 	to_chat(quirk_holder, span_bolddanger(desc)) // efficiency is clever laziness
 
 /datum/quirk/chip_connector/remove()
-	qdel(connector)
+	if(!HAS_TRAIT(quirk_holder, TRAIT_PARADISE_ZOMBIE))
+		qdel(connector)

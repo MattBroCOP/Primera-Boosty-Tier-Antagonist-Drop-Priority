@@ -145,6 +145,8 @@
 	if(soul_eyes)
 		qdel(soul_eyes)
 
+	if(QDELETED(src) || QDELETED(reviving))
+		return
 	if(isobserver(chosen_one))
 		reviving.PossessByPlayer(chosen_one.ckey)
 		on_successful_revive?.Invoke(reviving)

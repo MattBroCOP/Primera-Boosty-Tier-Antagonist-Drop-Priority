@@ -6,6 +6,13 @@
 	value = -2
 	medical_record_text = "Увы, пациенту с трудом удалось наскрести достаточно денег, чтобы оплатить счет за обследование."
 	hardcore_value = 2
+	/// A debt can be paid while this quirk is detached from its holder.
+	var/debt_paid_while_detached = FALSE
+
+/datum/quirk/indebted/add(client/client_source)
+	if(debt_paid_while_detached)
+		debt_paid_while_detached = FALSE
+		award_debt_payment()
 
 /datum/quirk/indebted/add_unique(client/client_source)
 	var/mob/living/carbon/human/human_holder = quirk_holder
@@ -23,6 +30,13 @@
 	if(source.account_debt)
 		return
 	UnregisterSignal(source, COMSIG_BANK_ACCOUNT_DEBT_PAID)
+	if(!quirk_holder)
+		debt_paid_while_detached = TRUE
+		return
+	award_debt_payment()
+
+/// Delivers the debt payment reward once the quirk has a holder.
+/datum/quirk/indebted/proc/award_debt_payment()
 	///The debt was extinguished while the quirk holder was logged out, so let's kindly award it once they come back.
 	if(!quirk_holder.client)
 		RegisterSignal(quirk_holder, COMSIG_MOB_LOGIN, PROC_REF(award_on_login))

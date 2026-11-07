@@ -19,6 +19,8 @@
 	customization_options = list(/datum/preference/choiced/chipped)
 
 /datum/quirk/chipped/add_to_holder(mob/living/new_holder, quirk_transfer, client/client_source, unique = TRUE, announce = FALSE)
+	if(quirk_transfer)
+		return ..()
 	var/chip_pref = client_source?.prefs?.read_preference(/datum/preference/choiced/chipped)
 
 	if(isnull(chip_pref))
@@ -38,5 +40,6 @@
 	installed_chip.try_activate_skillchip(silent = FALSE, force = TRUE)
 
 /datum/quirk/chipped/remove()
-	QDEL_NULL(installed_chip)
+	if(!HAS_TRAIT(quirk_holder, TRAIT_PARADISE_ZOMBIE))
+		QDEL_NULL(installed_chip)
 	return ..()

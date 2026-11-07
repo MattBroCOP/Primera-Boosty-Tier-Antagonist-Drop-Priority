@@ -122,9 +122,11 @@ Key procs
 
 	return .
 
-/// Grants every language to understood and spoken, and gives omnitongue.
+/// Grants languages in bulk and gives omnitongue. Observers also receive restricted languages.
 /datum/language_holder/proc/grant_all_languages(language_flags = ALL, grant_omnitongue = TRUE, source = LANGUAGE_MIND)
-	for(var/language in GLOB.all_languages)
+	for(var/datum/language/language as anything in GLOB.all_languages)
+		if((language::flags & LANGUAGE_NO_UNIVERSAL_GRANT) && !isobserver(owner))
+			continue
 		grant_language(language, language_flags, source)
 	if(grant_omnitongue) // Overrides tongue limitations.
 		omnitongue = TRUE

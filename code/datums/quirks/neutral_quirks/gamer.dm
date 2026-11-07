@@ -20,12 +20,14 @@
 	RegisterSignal(quirk_holder, COMSIG_MOB_WON_VIDEOGAME, PROC_REF(won_game))
 	RegisterSignal(quirk_holder, COMSIG_MOB_LOST_VIDEOGAME, PROC_REF(lost_game))
 	RegisterSignal(quirk_holder, COMSIG_MOB_PLAYED_VIDEOGAME, PROC_REF(gamed))
-
-/datum/quirk/gamer/post_add()
 	// The gamer starts off quelled
 	gaming_withdrawal_timer = addtimer(CALLBACK(src, PROC_REF(enter_withdrawal)), GAMING_WITHDRAWAL_TIME, TIMER_STOPPABLE)
 
 /datum/quirk/gamer/remove()
+	if(gaming_withdrawal_timer)
+		deltimer(gaming_withdrawal_timer)
+		gaming_withdrawal_timer = TIMER_ID_NULL
+	quirk_holder.clear_mood_event("gamer_withdrawal")
 	var/obj/item/organ/tongue/tongue = quirk_holder.get_organ_slot(ORGAN_SLOT_TONGUE)
 	if(tongue)
 		tongue.liked_foodtypes = initial(tongue.liked_foodtypes)
@@ -81,7 +83,7 @@
 /datum/quirk/gamer/proc/gamer_moment()
 	// It was a heated gamer moment...
 	var/mob/living/carbon/human/human_holder = quirk_holder
-	human_holder.say(";[pick("ДЕРЬМО", "СУКА", "БЛЯТЬ", "ГАНДОН", "ХУЕСОС", "УБЛЮДОК")]!!", forced = name)
+	human_holder?.say(";[pick("ДЕРЬМО", "СУКА", "БЛЯТЬ", "ГАНДОН", "ХУЕСОС", "УБЛЮДОК")]!!", forced = name)
 
 /datum/quirk/gamer/proc/enter_withdrawal()
 	var/mob/living/carbon/human/human_holder = quirk_holder

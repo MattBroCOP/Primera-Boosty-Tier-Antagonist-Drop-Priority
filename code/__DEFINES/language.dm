@@ -7,6 +7,8 @@
 #define LANGUAGE_HIDE_ICON_IF_UNDERSTOOD (1<<2)
 /// Language icon is hidden if the language is not understood
 #define LANGUAGE_HIDE_ICON_IF_NOT_UNDERSTOOD (1<<3)
+/// Language requires a dedicated grant outside observer mode.
+#define LANGUAGE_NO_UNIVERSAL_GRANT (1<<4)
 
 // Returns from display_icon_type
 /// Display no icon for this language

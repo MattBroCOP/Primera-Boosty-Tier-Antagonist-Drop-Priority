@@ -84,6 +84,13 @@
 /datum/quirk/spacer_born/remove()
 	UnregisterSignal(quirk_holder, COMSIG_MOVABLE_Z_CHANGED)
 	UnregisterSignal(quirk_holder, COMSIG_LIVING_GRAVITY_CHANGED)
+	if(planetside_timer)
+		deltimer(planetside_timer)
+		planetside_timer = null
+	if(recovering_timer)
+		deltimer(recovering_timer)
+		recovering_timer = null
+	last_state = null
 
 	if(QDELING(quirk_holder))
 		return

@@ -22,8 +22,12 @@
 	var/plague_disease
 	/// Wizard/admin creation can skip the incubation and necrotize every limb immediately.
 	var/instant_zombie = FALSE
+	/// The selected language to restore when this body is cured.
+	var/previous_language
 	/// Prevents tumor extraction and antagonist cleanup from recursively curing the same disease.
 	var/clearing_infection = FALSE
+	/// The body's quirks are detached while it is a zombie and reattached on cure.
+	var/list/suspended_quirks
 	/// Original disease processing runs once every two seconds.
 	var/cycle_accumulator = 0
 	/// Deadline for the next ordinary infection stage increase.
@@ -54,6 +58,7 @@
 /datum/disease/paradise_zombie/Destroy()
 	if(affected_mob && !clearing_infection && !QDELETED(affected_mob))
 		clear_zombie_effects()
+	QDEL_LAZYLIST(suspended_quirks)
 	return ..()
 
 /datum/disease/paradise_zombie/stage_act(seconds_per_tick = 2)
@@ -189,7 +194,16 @@
 
 	host.LoadComponent(/datum/component/paradise_zombie_regen)
 	host.LoadComponent(/datum/component/paradise_zombie_combat)
+	if(!HAS_TRAIT(host, TRAIT_PARADISE_ZOMBIE))
+		var/datum/language_holder/languages = host.get_language_holder()
+		previous_language = languages.selected_language
+		languages.add_blocked_language(GLOB.all_languages - /datum/language/paradise_zombie, ALL, REF(src))
+		languages.grant_language(/datum/language/paradise_zombie, ALL, REF(src))
+		languages.selected_language = /datum/language/paradise_zombie
 	ADD_TRAIT(host, TRAIT_PARADISE_ZOMBIE, PARADISE_ZOMBIE_TRAIT)
+	for(var/datum/quirk/quirk as anything in host.quirks?.Copy())
+		quirk.remove_from_current_holder(quirk_transfer = TRUE)
+		LAZYADD(suspended_quirks, quirk)
 	ADD_TRAIT(host, TRAIT_BRAINLESS_CARBON, PARADISE_ZOMBIE_TRAIT)
 	ADD_TRAIT(host, TRAIT_NOBREATH, PARADISE_ZOMBIE_TRAIT)
 	host.become_husk(PARADISE_ZOMBIE_TRAIT)
@@ -242,6 +256,11 @@
 	REMOVE_TRAIT(host, TRAIT_PARADISE_PLAGUE_ZOMBIE, PARADISE_ZOMBIE_TRAIT)
 	REMOVE_TRAIT(host, TRAIT_PARADISE_NON_INFECTIOUS_ZOMBIE, PARADISE_ZOMBIE_TRAIT)
 	REMOVE_TRAIT(host, TRAIT_VIRUSIMMUNE, PARADISE_ZOMBIE_TRAIT)
+	var/datum/language_holder/languages
+	if(HAS_TRAIT(host, TRAIT_PARADISE_ZOMBIE))
+		languages = host.get_language_holder()
+		languages.remove_blocked_language(GLOB.all_languages, ALL, REF(src))
+		languages.remove_language(/datum/language/paradise_zombie, ALL, REF(src))
 	REMOVE_TRAIT(host, TRAIT_PARADISE_ZOMBIE, PARADISE_ZOMBIE_TRAIT)
 	REMOVE_TRAIT(host, TRAIT_BRAINLESS_CARBON, PARADISE_ZOMBIE_TRAIT)
 	REMOVE_TRAIT(host, TRAIT_NOBREATH, PARADISE_ZOMBIE_TRAIT)
@@ -254,6 +273,14 @@
 		tumor.Remove(host)
 	qdel(host.GetComponent(/datum/component/paradise_zombie_regen))
 	qdel(host.GetComponent(/datum/component/paradise_zombie_combat))
+	for(var/datum/quirk/quirk as anything in suspended_quirks)
+		if(host.has_quirk(quirk.type))
+			qdel(quirk)
+		else
+			quirk.add_to_holder(host, quirk_transfer = TRUE)
+	suspended_quirks = null
+	if(languages)
+		languages.selected_language = previous_language
 	host.update_body_parts()
 	host.med_hud_set_health()
 	host.med_hud_set_status()

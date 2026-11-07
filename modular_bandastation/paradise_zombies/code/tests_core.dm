@@ -170,7 +170,7 @@
 	infection.stage = 8
 	infection.process_infection_cycle()
 	TEST_ASSERT_EQUAL(limb.GetComponent(/datum/component/paradise_zombie_limb), necrosis, "Immediate transformation replaced the already-marked tissue component.")
-	TEST_ASSERT(necrosis.necrotic && HAS_TRAIT(limb, TRAIT_PARADISE_ZOMBIE_LIMB), "Immediate transformation lost the existing limb's necrosis or infection marker.")
+	TEST_ASSERT(!necrosis.necrotic && HAS_TRAIT(limb, TRAIT_PARADISE_ZOMBIE_LIMB), "Immediate transformation failed to heal necrosis while keeping the limb's infection marker.")
 
 /** Historical map paths create real carbon zombies and retain their outfits without a basic-mob AI backend. */
 /datum/unit_test/paradise_zombie_mapped_corpses/Run()
@@ -265,13 +265,19 @@
 		var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
 		patient.mind_initialize()
 		TEST_ASSERT(patient.add_quirk(/datum/quirk/cursed), "The [scenario] fixture could not acquire the real Cursed quirk.")
+		var/datum/quirk/original_curse = patient.get_quirk(/datum/quirk/cursed)
 		if(scenario != "human")
 			var/datum/disease/paradise_zombie/infection = new()
 			infection.infect(patient, FALSE)
+			TEST_ASSERT_EQUAL(patient.get_quirk(/datum/quirk/cursed), original_curse, "Early infection removed a quirk before transformation.")
 			infection.stage = 8
+			infection.process_infection_cycle()
+			TEST_ASSERT(!length(patient.quirks) && !HAS_TRAIT(patient, TRAIT_CURSED), "Transformation left active quirks or their traits on the zombie.")
+			TEST_ASSERT_NULL(patient.GetComponent(/datum/component/omen), "Transformation left Cursed's accident and death hooks on the zombie.")
 			infection.process_infection_cycle()
 			if(scenario == "cured")
 				infection.cure()
+				TEST_ASSERT_EQUAL(patient.get_quirk(/datum/quirk/cursed), original_curse, "Curing the plague did not restore the original quirk.")
 		var/list/original_limbs = patient.get_bodyparts()
 		original_limbs = original_limbs.Copy()
 		patient.death()
@@ -282,6 +288,23 @@
 				TEST_ASSERT_EQUAL(limb.owner, patient, "Cursed detached an original zombie limb without changing the bodypart count.")
 		else
 			TEST_ASSERT(length(patient.get_bodyparts()) < length(original_limbs), "The [scenario] control retained zombie-only protection from Cursed limb scattering.")
+
+/** A pending quirk effect cannot return while the body is a zombie. */
+/datum/unit_test/paradise_zombie_spacer_quirk/Run()
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
+	TEST_ASSERT(patient.add_quirk(/datum/quirk/spacer_born, add_unique = FALSE), "The fixture could not acquire Spacer.")
+	var/datum/quirk/spacer_born/spacer = patient.get_quirk(/datum/quirk/spacer_born)
+	spacer.in_space(patient, skip_timers = TRUE)
+	spacer.planet_period = 1 SECONDS
+	spacer.on_planet(patient)
+	TEST_ASSERT(spacer.planetside_timer, "The fixture did not schedule gravity sickness.")
+	var/datum/disease/paradise_zombie/infection = new()
+	infection.infect(patient, FALSE)
+	infection.stage = 8
+	infection.process_infection_cycle()
+	TEST_ASSERT(HAS_TRAIT(patient, TRAIT_PARADISE_ZOMBIE), "The fixture did not transform.")
+	sleep(2 SECONDS)
+	TEST_ASSERT_NULL(patient.has_status_effect(/datum/status_effect/spacer/gravity_sickness), "A detached quirk applied delayed gravity sickness to a zombie.")
 
 /** The native resist action breaks a zombie's cuffs in five real seconds, cancels on movement and resets on cure. */
 /datum/unit_test/paradise_zombie_cuff_escape

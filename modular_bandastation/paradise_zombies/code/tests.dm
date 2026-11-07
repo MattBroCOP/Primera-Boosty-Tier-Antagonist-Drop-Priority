@@ -35,7 +35,7 @@
 	UNTIL(QDELETED(tumor) || world.time >= deadline)
 	TEST_ASSERT(QDELETED(tumor), "The extracted tumor did not expire after surgery.")
 
-/// The new language must be usable with an ordinary tongue and leave no blocks after mind transfer.
+/// Zombie speech follows the infected body until it is cured.
 /datum/unit_test/paradise_zombie_language_and_transfer/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
 	var/mob/living/carbon/human/new_body = allocate(/mob/living/carbon/human/consistent)
@@ -53,10 +53,52 @@
 	TEST_ASSERT(!(patient in GLOB.current_living_antags), "Mind transfer left the abandoned body registered as a living antagonist.")
 	TEST_ASSERT(!mind.has_antag_datum(/datum/antagonist/paradise_zombie), "The zombie antagonist crossed into an uninfected body.")
 	TEST_ASSERT(new_body.can_speak_language(/datum/language/common), "Zombie language restrictions leaked into the new body.")
-	TEST_ASSERT(patient.can_speak_language(/datum/language/common), "The old body's language source was not restored on mind transfer.")
+	TEST_ASSERT(!new_body.has_language(/datum/language/paradise_zombie), "Zombie language leaked into the new body.")
+	TEST_ASSERT_EQUAL(patient.get_selected_language(), /datum/language/paradise_zombie, "The mindless zombie reverted to its old language.")
 	TEST_ASSERT_NOTNULL(patient.GetComponent(/datum/component/paradise_zombie_combat), "Mind transfer removed the old body's infection-owned combat component.")
 	patient.check_breath(null)
 	TEST_ASSERT_EQUAL(patient.get_oxy_loss(), 0, "The abandoned infected body started suffocating after its mind left.")
+	infection.cure()
+	TEST_ASSERT_EQUAL(patient.get_selected_language(), /datum/language/common, "The cured body did not regain its original language.")
+	TEST_ASSERT(!patient.has_language(/datum/language/paradise_zombie), "The cured body retained zombie language understanding.")
+
+/// Ordinary ears hear the same groans in chat and in TTS, even with partial language knowledge.
+/datum/unit_test/paradise_zombie_speech
+	/// The translated speech received by the living listener.
+	var/heard_message
+	/// The text supplied to the voice synthesis handler for the same listener.
+	var/tts_message
+
+/datum/unit_test/paradise_zombie_speech/Run()
+	var/mob/living/carbon/human/speaker = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
+	speaker.voice = null
+	var/mob/living/carbon/human/listener = allocate(/mob/living/carbon/human/consistent/tts_listener, get_step(speaker, EAST))
+	listener.mock_client = allocate(/datum/client_interface)
+	var/obj/item/taperecorder/recorder = allocate(/obj/item/taperecorder, get_turf(speaker))
+	recorder.become_hearing_sensitive()
+	var/datum/disease/paradise_zombie/infection = new
+	infection.infect(speaker, FALSE)
+	infection.stage = 8
+	infection.process_infection_cycle()
+	listener.grant_partial_language(/datum/language/paradise_zombie, 100)
+	RegisterSignal(listener, COMSIG_MOVABLE_HEAR, PROC_REF(on_hear))
+	// TTS220's signal define is included after the core unit tests.
+	RegisterSignal(speaker, "atom_tts_cast", PROC_REF(on_tts))
+	speaker.say("Тайна?", ignore_spam = TRUE)
+	TEST_ASSERT(endswith(heard_message, "?") && !findtext(heard_message, "Тайна"), "A living listener received intelligible zombie speech: [heard_message].")
+	TEST_ASSERT_EQUAL(tts_message, heard_message, "TTS did not use the same scrambled message as chat.")
+	TEST_ASSERT_EQUAL(speaker.translate_language(speaker, /datum/language/paradise_zombie, "Тайна?"), "Тайна?", "A zombie could not understand its own language.")
+	TEST_ASSERT(length(recorder.mytape.storedinfo), "The recorder did not capture the speech fixture.")
+	var/datum/tape_message/recording = recorder.mytape.storedinfo[1]
+	TEST_ASSERT(endswith(recording.text, "?") && !findtext(recording.text, "Тайна"), "The tape recorder stored intelligible zombie speech.")
+
+/datum/unit_test/paradise_zombie_speech/proc/on_hear(datum/source, list/hearing_args)
+	SIGNAL_HANDLER
+	heard_message = hearing_args[HEARING_RAW_MESSAGE]
+
+/datum/unit_test/paradise_zombie_speech/proc/on_tts(datum/source, mob/listener, message)
+	SIGNAL_HANDLER
+	tts_message = message
 
 /// Existing Romerol must contract the replacement plague, including its sticky medical discovery.
 /datum/unit_test/paradise_zombie_romerol_and_medhud/Run()

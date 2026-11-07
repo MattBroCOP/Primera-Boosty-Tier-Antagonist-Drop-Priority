@@ -22,7 +22,8 @@
 	if(!reagent_type)
 		reagent_type = GLOB.possible_junkie_addictions[pick(GLOB.possible_junkie_addictions)]
 
-	reagent_instance = new reagent_type()
+	if(QDELETED(reagent_instance))
+		reagent_instance = new reagent_type()
 
 	for(var/addiction in reagent_instance.addiction_types)
 		human_holder.last_mind?.add_addiction_points(addiction, 1000)
@@ -103,9 +104,10 @@
 	return ..()
 
 /datum/quirk/item_quirk/addict/remove()
-	if(!QDELETED(quirk_holder) && reagent_instance)
-		for(var/addiction_type in GLOB.addictions)
-			quirk_holder.mind.remove_addiction_points(addiction_type, MAX_ADDICTION_POINTS)
+	var/mob/living/carbon/human/human_holder = quirk_holder
+	if(!QDELETED(human_holder) && reagent_instance)
+		for(var/addiction_type in reagent_instance.addiction_types)
+			human_holder.last_mind?.remove_addiction_points(addiction_type, MAX_ADDICTION_POINTS)
 
 /datum/quirk/item_quirk/addict/smoker
 	name = "Smoker"
@@ -225,9 +227,12 @@
 		favorite_alcohol = GLOB.possible_alcoholic_addictions[addiction]["reagent"]
 	return ..()
 
-/datum/quirk/item_quirk/addict/alcoholic/post_add()
+/datum/quirk/item_quirk/addict/alcoholic/add(client/client_source)
 	. = ..()
 	RegisterSignal(quirk_holder, COMSIG_MOB_REAGENT_TICK, PROC_REF(check_brandy))
+
+/datum/quirk/item_quirk/addict/alcoholic/post_add()
+	. = ..()
 	var/obj/item/reagent_containers/brandy_container = drug_container_type
 	if(isnull(brandy_container))
 		stack_trace("Alcoholic quirk added while the GLOB.possible_alcoholic_addictions is (somehow) not initialized!")
@@ -242,6 +247,7 @@
 		alcohol_liver.healing_factor = alcohol_liver.healing_factor * 0.75
 
 /datum/quirk/item_quirk/addict/alcoholic/remove()
+	. = ..()
 	UnregisterSignal(quirk_holder, COMSIG_MOB_REAGENT_TICK)
 
 /datum/quirk/item_quirk/addict/alcoholic/proc/check_brandy(mob/source, datum/reagent/booze, seconds_per_tick, metabolization_rate)

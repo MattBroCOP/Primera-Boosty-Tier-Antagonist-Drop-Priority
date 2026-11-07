@@ -10,8 +10,6 @@
 	stinger_sound = 'modular_bandastation/paradise_zombies/sound/zomboidalert.ogg'
 	/// Granted actions are owned by this antagonist, including across mind transfers.
 	var/list/zombie_actions = list()
-	/// The language selection to restore when this body's infection is removed.
-	var/previous_language
 	/// Guards cleanup when a mind leaves an infected body for an uninfected one.
 	var/datum/weakref/applied_body_ref
 
@@ -47,13 +45,6 @@
 	handle_clown_mutation(zombie, "М-мо-о-озги... Хонк...", removing = TRUE)
 	ADD_TRAIT(zombie, TRAIT_NOBREATH, REF(src))
 	MODIFY_PHYSIOLOGY(zombie, STAMINA, 0.5)
-	var/datum/language_holder/languages = zombie.get_language_holder()
-	previous_language = languages.selected_language
-	var/list/blocked_languages = GLOB.all_languages.Copy()
-	blocked_languages -= /datum/language/paradise_zombie
-	languages.add_blocked_language(blocked_languages, ALL, REF(src))
-	languages.grant_language(/datum/language/paradise_zombie, ALL, REF(src))
-	languages.selected_language = /datum/language/paradise_zombie
 	zombie.LoadComponent(/datum/component/paradise_zombie_combat)
 	RegisterSignal(zombie, COMSIG_LIVING_TRY_PUT_IN_HAND, PROC_REF(restrict_hands))
 	RegisterSignal(zombie, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(update_slowdown))
@@ -95,10 +86,6 @@
 	zombie.remove_movespeed_modifier(/datum/movespeed_modifier/paradise_zombie)
 	if(!HAS_TRAIT(zombie, TRAIT_PARADISE_ZOMBIE))
 		qdel(zombie.GetComponent(/datum/component/paradise_zombie_combat))
-	var/datum/language_holder/languages = zombie.get_language_holder()
-	languages.remove_blocked_language(GLOB.all_languages, ALL, REF(src))
-	languages.remove_language(/datum/language/paradise_zombie, ALL, REF(src))
-	languages.selected_language = previous_language
 	QDEL_NULL(team_hud_ref)
 
 /datum/antagonist/paradise_zombie/on_body_transfer(mob/living/old_body, mob/living/new_body)

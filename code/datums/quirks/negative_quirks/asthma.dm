@@ -170,6 +170,8 @@
 
 /// Sends feedback to our owner of which direction our asthma is intensifying/recovering.
 /datum/quirk/item_quirk/asthma/proc/do_inflammation_change_feedback(difference)
+	if(QDELETED(quirk_holder))
+		return
 	var/change_mult = 1 + (difference / 300) // 300 is arbitrary
 	if (difference > 0) // it decreased
 		if (prob(1 * change_mult))

@@ -1,9 +1,9 @@
 #define PARADISE_ZOMBIE_LIMB_COLOR_PRIORITY 45
 
-/** Stores Paradise's persistent dead-limb state without changing the body's species. */
+/** Tracks plague infection and necrosis on the physical limb. */
 /datum/component/paradise_zombie_limb
 	dupe_mode = COMPONENT_DUPE_UNIQUE
-	/// Omega can restore dead tissue while the infection retains its limb marker.
+	/// Omega and full transformation can restore dead tissue while it remains marked as infected.
 	var/necrotic = FALSE
 	/// Necrosis from Lazarus is not plague infection until the disease reaches this limb.
 	var/infected = FALSE
@@ -43,14 +43,16 @@
 		return FALSE
 	infected = TRUE
 	ADD_TRAIT(parent, TRAIT_PARADISE_ZOMBIE_LIMB, PARADISE_ZOMBIE_TRAIT)
+	if(necrotic)
+		update_usability()
 	return TRUE
 
-/** Makes organic tissue dead and numb; transformed zombies can still use their dead limbs. */
+/** Makes organic tissue dead and numb until the host fully transforms. */
 /datum/component/paradise_zombie_limb/proc/necrotize()
-	if(necrotic)
+	var/obj/item/bodypart/limb = parent
+	if(necrotic || HAS_TRAIT(limb.owner, TRAIT_PARADISE_ZOMBIE))
 		return
 	necrotic = TRUE
-	var/obj/item/bodypart/limb = parent
 	limb.add_color_override("#618C61", PARADISE_ZOMBIE_LIMB_COLOR_PRIORITY)
 	if(limb.owner)
 		to_chat(limb.owner, span_notice("Вы больше не чувствуете [ru_parse_zone(limb.body_zone, ACCUSATIVE)]..."))
@@ -91,6 +93,8 @@
 		return
 	if(necrotic && !HAS_TRAIT(limb.owner, TRAIT_PARADISE_ZOMBIE))
 		ADD_TRAIT(limb, TRAIT_PARALYSIS, REF(src))
+	else if(necrotic && infected)
+		heal_necrosis()
 	else
 		REMOVE_TRAIT(limb, TRAIT_PARALYSIS, REF(src))
 

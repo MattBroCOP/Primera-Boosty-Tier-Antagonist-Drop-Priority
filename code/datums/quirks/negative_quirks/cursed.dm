@@ -19,6 +19,11 @@
 		on_death = CALLBACK(src, PROC_REF(on_death)), \
 	)
 
+/datum/quirk/cursed/remove()
+	var/datum/component/omen/omen = quirk_holder.GetComponent(/datum/component/omen)
+	if(omen?.on_death?.object == src)
+		qdel(omen)
+
 /datum/quirk/cursed/proc/on_death(datum/component/omen/omen)
 	var/mob/living/carbon/cursed = omen.parent
 	if(!iscarbon(cursed))

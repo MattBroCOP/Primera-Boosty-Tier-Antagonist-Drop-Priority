@@ -154,10 +154,19 @@ GAME_VERB(/obj/item/taperecorder, ejectverb, "Eject Tape", null)
 	return ..()
 
 
-/obj/item/taperecorder/Hear(atom/movable/speaker, message_langs, raw_message, radio_freq, radio_freq_name, radio_freq_color, spans, list/message_mods = list(), message_range)
+/obj/item/taperecorder/Hear(atom/movable/speaker, datum/language/message_language, raw_message, radio_freq, radio_freq_name, radio_freq_color, spans, list/message_mods = list(), message_range)
 	. = ..()
 	if(message_mods[MODE_RELAY] || !mytape || istype(speaker, /obj/item/taperecorder))
 		return
+
+	if(message_language && (message_language::flags & LANGUAGE_NO_UNIVERSAL_GRANT))
+		raw_message = translate_language(speaker, message_language, raw_message, spans, message_mods)
+	else
+		for(var/list/segment as anything in message_mods[LANGUAGE_MESSAGE_SEGMENTS])
+			var/datum/language/segment_language = segment["language"]
+			if(segment_language && (segment_language::flags & LANGUAGE_NO_UNIVERSAL_GRANT))
+				raw_message = translate_language(speaker, message_language, raw_message, spans, message_mods)
+				break
 
 	mytape.timestamp += mytape.used_capacity
 	mytape.storedinfo += new /datum/tape_message(time2text(mytape.used_capacity, "mm:ss", NO_TIMEZONE), speaker.get_voice(), raw_message, speaker.get_tts_seed()) // BANDASTATION ADDITION - TTS

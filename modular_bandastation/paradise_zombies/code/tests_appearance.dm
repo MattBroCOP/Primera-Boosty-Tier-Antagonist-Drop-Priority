@@ -26,7 +26,7 @@
 	TEST_ASSERT(HAS_TRAIT_FROM(host, TRAIT_HUSK, PARADISE_ZOMBIE_TRAIT), "Changing the sprite removed native husk gameplay state.")
 	for(var/obj/item/bodypart/limb as anything in host.get_bodyparts())
 		var/datum/component/paradise_zombie_limb/rot = limb.GetComponent(/datum/component/paradise_zombie_limb)
-		TEST_ASSERT(rot?.necrotic && rot.infected, "Changing the sprite removed a limb's infected necrosis.")
+		TEST_ASSERT(rot?.infected && !rot.necrotic, "Transformation failed to heal limb necrosis while retaining the infection marker.")
 		TEST_ASSERT_EQUAL(limb.is_husked, HUSKED_ZOMBIE, "Changing the sprite removed a limb's native zombie state.")
 	var/icon/old_cached_icon = appearance.cached_body_icon
 	host.update_body()
@@ -37,6 +37,9 @@
 	var/datum/component/paradise_zombie_regen/regeneration = host.GetComponent(/datum/component/paradise_zombie_regen)
 	regeneration.process(1)
 	TEST_ASSERT_NOTEQUAL(host.stat, DEAD, "The ordinary TGMC zombie did not survive its real Paradise resurrection.")
+	for(var/obj/item/bodypart/limb as anything in host.get_bodyparts())
+		var/datum/component/paradise_zombie_limb/rot = limb.GetComponent(/datum/component/paradise_zombie_limb)
+		TEST_ASSERT(!rot?.necrotic, "Resurrection restarted limb necrosis.")
 	TEST_ASSERT_EQUAL(host.GetComponent(/datum/component/paradise_zombie_appearance), appearance, "Resurrection replaced or removed the ordinary TGMC renderer.")
 	TEST_ASSERT_NOTNULL(appearance.body_appearance, "Resurrection removed the ordinary TGMC body image.")
 	TEST_ASSERT_EQUAL(count_body_overlays(host, appearance.body_appearance.icon), 1, "Native healing and revival left a missing or duplicated TGMC body image.")
@@ -76,6 +79,9 @@
 	var/donor_species_color = arm.species_color
 	arm.drop_limb(special = TRUE)
 	TEST_ASSERT(arm.replace_limb(host), "Real donor tissue could not attach while TGMC appearance was active.")
+	infection.process_infection_cycle()
+	var/datum/component/paradise_zombie_limb/rot = arm.GetComponent(/datum/component/paradise_zombie_limb)
+	TEST_ASSERT(rot?.infected && !rot.necrotic && !arm.bodypart_disabled, "A disease tick rotted donor tissue grafted onto a transformed zombie.")
 	arm.receive_damage(brute = 9, burn = 3, forced = TRUE, wound_bonus = CANT_WOUND)
 	var/brute_before = arm.brute_dam
 	var/burn_before = arm.burn_dam

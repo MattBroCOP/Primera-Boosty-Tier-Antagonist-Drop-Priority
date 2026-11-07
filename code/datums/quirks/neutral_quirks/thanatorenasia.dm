@@ -20,13 +20,16 @@
 		Если вы умираете и выбираете опцию \"Не реанимировать\", при возрождении ваше тело может быть занято другим призраком. \
 		Вы всё ещё можете становиться антагонистом в середине раунда."
 
-/datum/quirk/death_dnr_poll/add_unique(client/client_source)
+/datum/quirk/death_dnr_poll/add(client/client_source)
 	. = ..()
 	RegisterSignal(quirk_holder, COMSIG_LIVING_DNR, PROC_REF(mob_died))
 
 /datum/quirk/death_dnr_poll/remove()
 	. = ..()
 	UnregisterSignal(quirk_holder, COMSIG_LIVING_DNR)
+	var/datum/component/ghostrole_on_revive/poll = quirk_holder.GetComponent(/datum/component/ghostrole_on_revive)
+	if(poll?.on_successful_revive?.object == src)
+		qdel(poll)
 
 /datum/quirk/death_dnr_poll/proc/mob_died(mob/living/source, mob/dead/observer/dnring)
 	SIGNAL_HANDLER
