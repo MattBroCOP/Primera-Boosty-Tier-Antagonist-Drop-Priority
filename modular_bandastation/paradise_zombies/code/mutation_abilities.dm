@@ -94,7 +94,9 @@
 /datum/component/paradise_zombie_mutation_claws/proc/on_pre_attack(obj/item/paradise_zombie_claw/source, atom/target, mob/living/user)
 	SIGNAL_HANDLER
 	unmodified_force = source.force
-	source.force *= claw_multiplier
+	// The Hunter's weaker strikes would otherwise fall below the deflection of standard airlocks.
+	if(form_id != "hunter" || !isobj(target))
+		source.force *= claw_multiplier
 
 /datum/component/paradise_zombie_mutation_claws/proc/on_afterattack(obj/item/paradise_zombie_claw/source, atom/target, mob/living/user)
 	SIGNAL_HANDLER

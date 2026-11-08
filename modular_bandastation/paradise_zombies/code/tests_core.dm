@@ -48,6 +48,54 @@
 	TEST_ASSERT_NOTEQUAL(patient.stat, DEAD, "The same zombie could not rise again after Omega was removed.")
 	TEST_ASSERT(!HAS_TRAIT(patient, TRAIT_MUTE) && !HAS_TRAIT(patient, TRAIT_DEAF), "A repeated resurrection failed to cure newly acquired speech and hearing mutations.")
 
+/** Native space exposure cannot keep an injured zombie corpse from healing enough to rise. */
+/datum/unit_test/paradise_zombie_space_resurrection
+	var/turf/space_tile
+	var/original_turf_type
+
+/datum/unit_test/paradise_zombie_space_resurrection/Destroy()
+	QDEL_LIST(allocated)
+	space_tile?.ChangeTurf(original_turf_type, flags = CHANGETURF_IGNORE_AIR)
+	space_tile = null
+	return ..()
+
+/datum/unit_test/paradise_zombie_space_resurrection/Run()
+	var/turf/floor = get_step(run_loc_floor_bottom_left, NORTHEAST)
+	original_turf_type = floor.type
+	space_tile = floor.ChangeTurf(/turf/open/space, flags = CHANGETURF_IGNORE_AIR)
+	var/datum/gas_mixture/space_air = space_tile.return_air()
+	TEST_ASSERT(space_air && space_air.return_pressure() < HAZARD_LOW_PRESSURE, "The fixture did not get a native vacuum turf.")
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent, space_tile)
+	var/datum/disease/paradise_zombie/infection = new()
+	infection.infect(patient, FALSE)
+	infection.stage = 8
+	infection.process_infection_cycle()
+	var/datum/component/paradise_zombie_regen/regeneration = patient.GetComponent(/datum/component/paradise_zombie_regen)
+	TEST_ASSERT_NOTNULL(regeneration, "The fixture did not acquire zombie regeneration.")
+	patient.adjust_brute_loss(40)
+	patient.death()
+	patient.timeofdeath = world.time - 15 SECONDS
+	patient.seconds_in_low_pressure = 160 SECONDS
+	patient.bodytemperature = TCMB
+	patient.set_coretemperature(TCMB)
+	var/brute_before = patient.get_brute_loss_for_type(BODYTYPE_ORGANIC)
+	patient.Life(SSMOBS_DT)
+	TEST_ASSERT_EQUAL(patient.get_brute_loss_for_type(BODYTYPE_ORGANIC), brute_before, "Vacuum pressure damaged a regenerating zombie corpse.")
+	TEST_ASSERT_EQUAL(patient.get_fire_loss_for_type(BODYTYPE_ORGANIC), 0, "Vacuum cold damaged a regenerating zombie corpse.")
+	regeneration.process(SSMOBS_DT)
+	TEST_ASSERT_EQUAL(patient.stat, DEAD, "Vacuum resurrection bypassed the normal injury limit.")
+	for(var/tick in 1 to 10)
+		patient.Life(SSMOBS_DT)
+		regeneration.process(SSMOBS_DT)
+		if(patient.stat != DEAD)
+			break
+	TEST_ASSERT_NOTEQUAL(patient.stat, DEAD, "The zombie did not resurrect while still exposed to vacuum.")
+	patient.bodytemperature = TCMB
+	patient.set_coretemperature(TCMB)
+	patient.Life(SSMOBS_DT)
+	TEST_ASSERT(patient.get_brute_loss_for_type(BODYTYPE_ORGANIC) > 0, "The revived zombie became immune to vacuum pressure.")
+	TEST_ASSERT(patient.get_fire_loss_for_type(BODYTYPE_ORGANIC) > 0, "The revived zombie became immune to vacuum cold.")
+
 /** Transformation suppresses real bleeding and restores blood until the infection is cured. */
 /datum/unit_test/paradise_zombie_blood_recovery/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)

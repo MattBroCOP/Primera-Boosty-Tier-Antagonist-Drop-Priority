@@ -200,6 +200,7 @@
 		languages.add_blocked_language(GLOB.all_languages - /datum/language/paradise_zombie, ALL, REF(src))
 		languages.grant_language(/datum/language/paradise_zombie, ALL, REF(src))
 		languages.selected_language = /datum/language/paradise_zombie
+		host.mob_mood?.set_enabled(FALSE, PARADISE_ZOMBIE_TRAIT)
 	ADD_TRAIT(host, TRAIT_PARADISE_ZOMBIE, PARADISE_ZOMBIE_TRAIT)
 	for(var/datum/quirk/quirk as anything in host.quirks?.Copy())
 		quirk.remove_from_current_holder(quirk_transfer = TRUE)
@@ -262,6 +263,7 @@
 		languages.remove_blocked_language(GLOB.all_languages, ALL, REF(src))
 		languages.remove_language(/datum/language/paradise_zombie, ALL, REF(src))
 	REMOVE_TRAIT(host, TRAIT_PARADISE_ZOMBIE, PARADISE_ZOMBIE_TRAIT)
+	host.mob_mood?.set_enabled(TRUE, PARADISE_ZOMBIE_TRAIT)
 	REMOVE_TRAIT(host, TRAIT_BRAINLESS_CARBON, PARADISE_ZOMBIE_TRAIT)
 	REMOVE_TRAIT(host, TRAIT_NOBREATH, PARADISE_ZOMBIE_TRAIT)
 	host.cure_husk(PARADISE_ZOMBIE_TRAIT)

@@ -13,6 +13,8 @@
 	var/mob/living/mob_parent
 	/// BANDASTATION ADDITION - Keep a neutral datum for callers when a species has no mood.
 	var/enabled = TRUE
+	/// Sources that must each release their suppression before mood resumes.
+	var/list/disabled_sources
 
 	/// The total combined value of all moodlets for the mob
 	var/mood
@@ -87,7 +89,12 @@
 	return ..()
 
 // BANDASTATION ADDITION START - Disable IPC mood without invalidating shared mob_mood callers
-/datum/mood/proc/set_enabled(new_enabled)
+/datum/mood/proc/set_enabled(new_enabled, source = MOOD_DATUM_TRAIT)
+	if(new_enabled)
+		LAZYREMOVE(disabled_sources, source)
+	else
+		LAZYOR(disabled_sources, source)
+	new_enabled = !length(disabled_sources)
 	if(enabled == new_enabled)
 		return
 	if(!new_enabled)

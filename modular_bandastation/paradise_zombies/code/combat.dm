@@ -64,6 +64,8 @@
 			return COMSIG_MOB_CANCEL_CLICKON
 		return
 	var/obj/item/held_item = source.get_active_held_item()
+	if(!held_item && istype(target, /obj/structure/ladder))
+		return
 	if((isobj(target) || held_item) && !istype(held_item, /obj/item/paradise_zombie_claw))
 		return COMSIG_MOB_CANCEL_CLICKON
 
@@ -100,7 +102,7 @@
 	SIGNAL_HANDLER
 	if(!HAS_TRAIT(source, TRAIT_PARADISE_ZOMBIE))
 		return NONE
-	if(isobj(target))
+	if(isobj(target) && !istype(target, /obj/structure/ladder))
 		return COMPONENT_CANCEL_ATTACK_CHAIN
 	if(!proximity || !source.combat_mode || HAS_TRAIT(source, TRAIT_PACIFISM) || LAZYACCESS(modifiers, RIGHT_CLICK) || !ishuman(target))
 		return NONE

@@ -33,8 +33,8 @@
 
 	var/is_right_clicking = LAZYACCESS(modifiers, RIGHT_CLICK)
 
-	// Claws can damage equipment, but can't operate it through the item interaction chain.
-	if(!zombie_attack)
+	// Ladders use item interaction for movement when the climber has claws out.
+	if(!zombie_attack || istype(target, /obj/structure/ladder))
 		var/item_interact_result = target.base_item_interaction(user, src, modifiers)
 		if(item_interact_result & ITEM_INTERACT_SUCCESS)
 			return TRUE

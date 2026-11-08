@@ -1,5 +1,34 @@
 #ifdef UNIT_TESTS
 
+/// Hunter claws damage station barriers without operating them or bypassing Beta weakening.
+/datum/unit_test/paradise_zombie_hunter_barrier_damage
+	parent_type = /datum/unit_test/paradise_zombie_mutation_ability_test
+
+/datum/unit_test/paradise_zombie_hunter_barrier_damage/Run()
+	var/mob/living/carbon/human/host = make_mutant("hunter")
+	TEST_ASSERT_NOTNULL(host, "The Hunter fixture was not created.")
+	TEST_ASSERT(extend_claws(host), "The Hunter could not extend its actual claws.")
+	var/obj/machinery/door/airlock/airlock = allocate(/obj/machinery/door/airlock, get_step(host, EAST))
+	var/obj/structure/window/reinforced/plasma/fulltile/window = allocate(/obj/structure/window/reinforced/plasma/fulltile, get_step(host, NORTH))
+	var/airlock_integrity = airlock.get_integrity()
+	var/window_integrity = window.get_integrity()
+	host.next_click = world.time - 1
+	host.next_move = world.time
+	host.ClickOn(airlock, "left=1")
+	TEST_ASSERT(airlock.get_integrity() < airlock_integrity, "The Hunter's real click failed to damage a standard airlock.")
+	TEST_ASSERT(airlock.density && !airlock.operating, "Attacking the airlock let the Hunter operate it.")
+	host.next_click = world.time - 1
+	host.next_move = world.time
+	host.ClickOn(window, "left=1")
+	TEST_ASSERT(window.get_integrity() < window_integrity, "The Hunter's real click failed to damage the window.")
+
+	airlock_integrity = airlock.get_integrity()
+	host.reagents.add_reagent(/datum/reagent/medicine/paradise_zombie_cure/beta, 2)
+	host.next_click = world.time - 1
+	host.next_move = world.time
+	host.ClickOn(airlock, "left=1")
+	TEST_ASSERT_EQUAL(airlock.get_integrity(), airlock_integrity, "The Hunter ignored Beta weakening when attacking an airlock.")
+
 /** The new button uses real claws and the existing flight, while the original jump remains available. */
 /datum/unit_test/paradise_zombie_hunter_pin_pounce
 	parent_type = /datum/unit_test/paradise_zombie_mutation_ability_test

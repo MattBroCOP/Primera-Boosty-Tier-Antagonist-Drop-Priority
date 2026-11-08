@@ -1239,6 +1239,11 @@ GLOBAL_LIST_EMPTY(features_by_species)
 	var/cold_damage_limit = bodytemp_cold_damage_limit + (is_hulk ? BODYTEMP_HULK_COLD_DAMAGE_LIMIT_MODIFIER : 0)
 
 	if(humi.coretemperature < cold_damage_limit && !HAS_TRAIT(humi, TRAIT_RESISTCOLD))
+		// Vacuum must not keep a zombie corpse too damaged to regenerate and rise.
+		if(humi.stat == DEAD && HAS_TRAIT(humi, TRAIT_PARADISE_ZOMBIE))
+			var/datum/gas_mixture/environment = humi.loc?.return_air()
+			if(environment && humi.calculate_affecting_pressure(environment.return_pressure()) < HAZARD_LOW_PRESSURE)
+				return
 		var/damage_type = is_hulk ? BRUTE : BURN // Why?
 		var/damage_mod = GET_PHYSIOLOGY(humi, PHYS_COEFF_COLD)
 		// Can't be a switch due to http://www.byond.com/forum/post/2750423
@@ -1335,8 +1340,8 @@ GLOBAL_LIST_EMPTY(features_by_species)
 
 		// Very low pressure, show an alert and take damage
 		else
-			// We have low pressure resit trait, clear alerts
-			if(HAS_TRAIT(H, TRAIT_RESISTLOWPRESSURE))
+			// Continuous vacuum damage can otherwise outpace a zombie corpse's regeneration.
+			if(HAS_TRAIT(H, TRAIT_RESISTLOWPRESSURE) || (H.stat == DEAD && HAS_TRAIT(H, TRAIT_PARADISE_ZOMBIE)))
 				H.clear_alert(ALERT_PRESSURE)
 			else
 				var/pressure_damage = min(round(1 + (H.seconds_in_low_pressure / 80 SECONDS), 0.05) * BASE_LOW_PRESSURE_DAMAGE, MAX_LOW_PRESSURE_DAMAGE) * seconds_per_tick

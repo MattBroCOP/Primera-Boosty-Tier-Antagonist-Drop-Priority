@@ -118,6 +118,58 @@
 	if(pressed == button)
 		button_presses++
 
+/// The real ladder clicks work with empty hands and with extended claws.
+/datum/unit_test/paradise_zombie_ladders
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+
+/datum/unit_test/paradise_zombie_ladders/Run()
+	var/mob/living/carbon/human/zombie = make_zombie(run_loc_floor_bottom_left)
+	var/obj/structure/ladder/bottom = allocate(/obj/structure/ladder, run_loc_floor_bottom_left)
+	var/obj/structure/ladder/top = allocate(/obj/structure/ladder, run_loc_floor_top_right)
+	bottom.link_up(top)
+	bottom.travel_time = 0
+	top.travel_time = 0
+	var/datum/action/cooldown/paradise_zombie_claws/claws = locate() in zombie.actions
+	for(var/extended in list(FALSE, TRUE))
+		zombie.set_combat_mode(FALSE)
+		if(extended)
+			TEST_ASSERT(claws?.Activate(), "The fixture could not extend its claws.")
+		click_wrapper(zombie, bottom)
+		TEST_ASSERT_EQUAL(zombie.loc, top.loc, "The zombie could not climb up (claws extended: [extended]).")
+		click_wrapper(zombie, top, list(RIGHT_CLICK = 1))
+		TEST_ASSERT_EQUAL(zombie.loc, bottom.loc, "The zombie could not climb down (claws extended: [extended]).")
+
+/// Transformation suppresses mood and its HUD. Cure releases only the infection's suppression.
+/datum/unit_test/paradise_zombie_mood
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+
+/datum/unit_test/paradise_zombie_mood/Run()
+	for(var/mood_initially_enabled in list(TRUE, FALSE))
+		var/mob/living/carbon/human/host = allocate(/mob/living/carbon/human/consistent)
+		var/datum/mood/mood = host.mob_mood
+		var/datum/hud/human/hud = new(host)
+		host.set_hud_used(hud)
+		SEND_SIGNAL(host, COMSIG_MOB_HUD_CREATED)
+		if(mood_initially_enabled)
+			host.add_mood_event("zombie_mood", /datum/mood_event/hug)
+			TEST_ASSERT_NOTNULL(mood.mood_events["zombie_mood"], "The ordinary human did not acquire a moodlet.")
+			TEST_ASSERT_NOTNULL(hud.screen_objects[HUD_MOB_MOOD], "The ordinary human started without a mood HUD.")
+		else
+			mood.set_enabled(FALSE)
+
+		var/datum/disease/paradise_zombie/infection = new()
+		TEST_ASSERT(host.ForceContractDisease(infection, make_copy = FALSE, del_on_fail = TRUE), "The mood fixture could not contract the plague.")
+		infection.stage = 8
+		infection.process_infection_cycle()
+		TEST_ASSERT(HAS_TRAIT(host, TRAIT_PARADISE_ZOMBIE), "The mood fixture did not transform.")
+		host.add_mood_event("new_zombie_mood", /datum/mood_event/starving)
+		TEST_ASSERT(!mood.enabled && !length(mood.mood_events), "The zombie retained or acquired moodlets.")
+		TEST_ASSERT(!(mood in SSmood.processing), "The zombie continued processing mood.")
+		TEST_ASSERT_NULL(hud.screen_objects[HUD_MOB_MOOD], "The zombie retained a mood HUD.")
+		infection.cure()
+		TEST_ASSERT_EQUAL(mood.enabled, mood_initially_enabled, "Cure did not restore the original mood availability.")
+		TEST_ASSERT_EQUAL(!!hud.screen_objects[HUD_MOB_MOOD], mood_initially_enabled, "Cure did not restore the original mood HUD availability.")
+
 /// Exercise the actual ability, including the two-handed component and item retraction.
 /datum/unit_test/paradise_zombie_claw_action/Run()
 	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
