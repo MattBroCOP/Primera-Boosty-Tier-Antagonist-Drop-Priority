@@ -127,7 +127,7 @@
 		/datum/reagent/medicine/morphine,
 	)
 
-/** Three native Gamma ingredients, plus a flesh-eating advanced virus. */
+/** Three of nine native Gamma ingredients, plus a flesh-eating advanced virus. */
 /datum/chemical_reaction/randomized/paradise_zombie_cure/gamma
 	results = list(/datum/reagent/medicine/paradise_zombie_cure/gamma = 1)
 	cure_level = 3
@@ -139,6 +139,12 @@
 		/datum/reagent/consumable/eggyolk,
 		/datum/reagent/toxin/acid,
 		/datum/reagent/toxin/acid/fluacid,
+		/datum/reagent/medicine/c2/multiver,
+		/datum/reagent/medicine/leporazine,
+		/datum/reagent/medicine/mutadone,
+		/datum/reagent/medicine/spaceacillin,
+		/datum/reagent/medicine/mannitol,
+		/datum/reagent/medicine/oculine,
 	)
 
 /** Two of nine native Omega ingredients, plus any advanced healing symptom. */
