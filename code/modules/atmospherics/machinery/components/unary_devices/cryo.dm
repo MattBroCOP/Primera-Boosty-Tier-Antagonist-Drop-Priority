@@ -410,7 +410,7 @@
 		return PROCESS_KILL
 
 	// Don't bother with fully healed people.
-	if(mob_occupant.get_organic_health() >= mob_occupant.getMaxHealth() && !mob_occupant.has_status_effect(/datum/status_effect/paradise_cloning_damage))
+	if(mob_occupant.get_organic_health() >= mob_occupant.getMaxHealth())
 		if(iscarbon(mob_occupant))
 			var/mob/living/carbon/C = mob_occupant
 			if(C.all_wounds)

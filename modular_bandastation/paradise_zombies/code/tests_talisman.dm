@@ -25,7 +25,7 @@
 	var/mob/living/carbon/human/victim = allocate(/mob/living/carbon/human/consistent)
 	caster.mind_initialize()
 	victim.mind_initialize()
-	victim.apply_status_effect(/datum/status_effect/paradise_cloning_damage, 50)
+	victim.set_brute_loss(50)
 	victim.death()
 	var/obj/item/plague_talisman/unit_test/talisman = allocate(/obj/item/plague_talisman/unit_test)
 	talisman.chosen_plague = /datum/disease/dna_retrovirus/paradise_plague
@@ -35,7 +35,7 @@
 	TEST_ASSERT(HAS_TRAIT(victim, TRAIT_PARADISE_PLAGUE_ZOMBIE) && HAS_TRAIT(victim, TRAIT_PARADISE_NON_INFECTIOUS_ZOMBIE), "The ritual did not immediately bestow its plague traits.")
 	var/datum/disease/paradise_zombie/wizard/infection = locate() in victim.diseases
 	TEST_ASSERT(istype(infection), "The ritual did not immediately install the uncureable wizard plague subtype.")
-	TEST_ASSERT_EQUAL(victim.maxHealth, 50, "The ritual granted its final health bonus or prematurely healed cellular injury before the five-second binding.")
+	TEST_ASSERT_EQUAL(victim.maxHealth, 100, "The ritual granted its final health bonus before the five-second binding.")
 	TEST_ASSERT_NULL(victim.mind.has_antag_datum(/datum/antagonist/wizard_minion/paradise_plague_zombie), "The servant was bound to its master before the five-second delay.")
 	var/datum/component/paradise_zombie_regen/regeneration = victim.GetComponent(/datum/component/paradise_zombie_regen)
 	TEST_ASSERT_NOTNULL(regeneration, "The immediate plague transformation did not install regeneration.")
@@ -47,7 +47,6 @@
 	TEST_ASSERT_NOTEQUAL(victim.stat, DEAD, "The completed ritual left its servant dead.")
 	TEST_ASSERT_EQUAL(victim.maxHealth, 200, "The plague servant did not receive its original two-hundred-health body.")
 	TEST_ASSERT_EQUAL(victim.health, 200, "The plague servant did not finish with a full two hundred health.")
-	TEST_ASSERT_NULL(victim.has_status_effect(/datum/status_effect/paradise_cloning_damage), "The completed ritual left its Lazarus corpse's cellular injury active.")
 	TEST_ASSERT_EQUAL(infection.plague_disease, /datum/disease/dna_retrovirus/paradise_plague, "The chosen plague did not reach the zombie's infection and claws.")
 	var/datum/antagonist/wizard_minion/paradise_plague_zombie/servant = victim.mind.has_antag_datum(/datum/antagonist/wizard_minion/paradise_plague_zombie)
 	TEST_ASSERT_NOTNULL(servant, "The raised body was not bound through the native wizard-minion system.")

@@ -50,7 +50,7 @@
 	return FALSE
 
 /**
- * Anti-plague research: each round chooses the donor's ingredient subsets.
+ * Anti-plague research: each round chooses subsets of native TG ingredients.
  * Randomized chemistry keeps the recipe out of the ordinary reagent lookup.
  */
 /datum/chemical_reaction/randomized/paradise_zombie_cure
@@ -110,7 +110,7 @@
 /datum/chemical_reaction/randomized/paradise_zombie_cure/alpha/get_possible_ingredients()
 	return list(/datum/reagent/medicine/diphenhydramine)
 
-/** Three reagents chosen from the original eight Beta candidates. */
+/** Three native reagents chosen from seven Beta candidates. */
 /datum/chemical_reaction/randomized/paradise_zombie_cure/beta
 	results = list(/datum/reagent/medicine/paradise_zombie_cure/beta = 1)
 	cure_level = 2
@@ -125,10 +125,9 @@
 		/datum/reagent/consumable/sodawater,
 		/datum/reagent/drug/happiness,
 		/datum/reagent/medicine/morphine,
-		/datum/reagent/medicine/paradise_teporone,
 	)
 
-/** Three of nine Gamma ingredients, plus a flesh-eating advanced virus. */
+/** Three native Gamma ingredients, plus a flesh-eating advanced virus. */
 /datum/chemical_reaction/randomized/paradise_zombie_cure/gamma
 	results = list(/datum/reagent/medicine/paradise_zombie_cure/gamma = 1)
 	cure_level = 3
@@ -137,18 +136,12 @@
 
 /datum/chemical_reaction/randomized/paradise_zombie_cure/gamma/get_possible_ingredients()
 	return list(
-		/datum/reagent/paradise_vomit,
-		/datum/reagent/drug/paradise_jenkem,
-		/datum/reagent/medicine/paradise_charcoal,
 		/datum/reagent/consumable/eggyolk,
 		/datum/reagent/toxin/acid,
 		/datum/reagent/toxin/acid/fluacid,
-		/datum/reagent/drug/paradise_surge,
-		/datum/reagent/lube/paradise_ultra,
-		/datum/reagent/medicine/paradise_mitocholide,
 	)
 
-/** Two of twelve Omega ingredients, plus any advanced healing symptom. */
+/** Two of nine native Omega ingredients, plus any advanced healing symptom. */
 /datum/chemical_reaction/randomized/paradise_zombie_cure/omega
 	results = list(/datum/reagent/medicine/paradise_zombie_cure/omega = 1)
 	cure_level = 4
@@ -160,14 +153,11 @@
 		/datum/reagent/colorful_reagent,
 		/datum/reagent/consumable/ethanol/bacchus_blessing,
 		/datum/reagent/medicine/pen_acid,
-		/datum/reagent/paradise_glyphosate,
 		/datum/reagent/medicine/strange_reagent,
 		/datum/reagent/medicine/omnizine,
-		/datum/reagent/toxin/paradise_sarin,
 		/datum/reagent/ants,
 		/datum/reagent/clf3,
 		/datum/reagent/sorium,
-		/datum/reagent/paradise_questionmark,
 		/datum/reagent/drug/aranesp,
 	)
 

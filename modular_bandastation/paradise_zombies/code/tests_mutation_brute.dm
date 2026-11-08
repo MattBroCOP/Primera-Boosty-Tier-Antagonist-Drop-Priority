@@ -1,6 +1,6 @@
 #ifdef UNIT_TESTS
 
-/** Brute's health bonus must retain independent max-health changes and cellular injury through cure. */
+/** Brute's health bonus must retain independent max-health changes through cure. */
 /datum/unit_test/paradise_zombie_brute_health
 	parent_type = /datum/unit_test/paradise_zombie_mutation_test
 
@@ -13,20 +13,14 @@
 
 	var/mob/living/carbon/human/host = make_zombie(run_loc_floor_bottom_left)
 	host.setMaxHealth(140)
-	var/datum/status_effect/paradise_cloning_damage/cellular_injury = host.apply_status_effect(/datum/status_effect/paradise_cloning_damage, 20)
-	TEST_ASSERT_EQUAL(host.maxHealth, 120, "The health fixture did not acquire real independent cellular injury.")
 	var/datum/component/paradise_zombie_mutation/controller = host.GetComponent(/datum/component/paradise_zombie_mutation)
-	TEST_ASSERT(controller.apply_form("brute"), "The nonstandard injured body could not become a Brute.")
-	TEST_ASSERT_EQUAL(host.maxHealth, 490, "Brute failed to retain the body's independent health modifiers alongside its 370 bonus.")
+	TEST_ASSERT(controller.apply_form("brute"), "The nonstandard body could not become a Brute.")
+	TEST_ASSERT_EQUAL(host.maxHealth, 510, "Brute failed to retain the body's independent health modifiers alongside its 370 bonus.")
 	host.setMaxHealth(host.maxHealth + 25)
-	cellular_injury.change_amount(10)
-	TEST_ASSERT_EQUAL(host.maxHealth, 505, "Independent health changes did not apply normally after mutation.")
+	TEST_ASSERT_EQUAL(host.maxHealth, 535, "Independent health changes did not apply normally after mutation.")
 	infection = locate() in host.diseases
 	infection.cure()
-	TEST_ASSERT_EQUAL(host.maxHealth, 135, "Cure erased a foreign health bonus or new cellular damage instead of subtracting only the applied mutation delta.")
-	TEST_ASSERT_EQUAL(cellular_injury.amount, 30, "Curing the infection changed the separate cellular damage channel.")
-	cellular_injury.change_amount(-30)
-	TEST_ASSERT_EQUAL(host.maxHealth, 165, "Treating cellular injury after cure failed to retain both foreign health bonuses.")
+	TEST_ASSERT_EQUAL(host.maxHealth, 165, "Cure erased a foreign health bonus instead of subtracting only the applied mutation delta.")
 
 /** Uses one reversible wall tile on the native unit-test level, retaining its original turf type. */
 /datum/unit_test/paradise_zombie_brute_wall_test

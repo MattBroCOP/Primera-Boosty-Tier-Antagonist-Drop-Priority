@@ -148,12 +148,12 @@
 	qdel(necrosis)
 	TEST_ASSERT(!HAS_TRAIT(infected_limb, TRAIT_PARADISE_ZOMBIE_LIMB) && !infected_limb.bodypart_disabled, "Removing the transplanted tissue's necrosis left its marker or paralysis behind.")
 
-/** Lazarus necrosis is not infected tissue until the plague actually reaches and marks the same limb. */
+/** Noninfectious necrosis is not infected tissue until the plague actually reaches and marks the same limb. */
 /datum/unit_test/paradise_zombie_noninfectious_necrosis/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/limb = patient.get_bodypart(BODY_ZONE_L_ARM)
 	var/datum/component/paradise_zombie_limb/necrosis = limb.AddComponent(/datum/component/paradise_zombie_limb, FALSE)
-	TEST_ASSERT(necrosis.necrotic && limb.bodypart_disabled, "Lazarus necrosis did not disable the dead organic tissue.")
+	TEST_ASSERT(necrosis.necrotic && limb.bodypart_disabled, "Noninfectious necrosis did not disable the dead organic tissue.")
 	TEST_ASSERT(!necrosis.infected && !HAS_TRAIT(limb, TRAIT_PARADISE_ZOMBIE_LIMB), "Ordinary corpse necrosis marked the limb as plague-infected.")
 	necrosis.heal_necrosis()
 	TEST_ASSERT(!limb.bodypart_disabled && !HAS_TRAIT(limb, TRAIT_PARADISE_ZOMBIE_LIMB), "Restoring ordinary dead tissue introduced an infection marker or left paralysis behind.")
@@ -229,17 +229,17 @@
 	TEST_ASSERT(!zombie.is_holding_item_of_type(/obj/item/paradise_zombie_claw), "A one-armed body attempted to retain two-handed claws.")
 	TEST_ASSERT(zombie.has_active_hand(), "NPC fallback failed to select the surviving arm.")
 
-/** Curing an early plague must not repair unrelated tissue killed by a previous Lazarus revival. */
+/** Curing an early plague must not repair unrelated noninfectious necrosis. */
 /datum/unit_test/paradise_zombie_cure_preserves_unrelated_necrosis/Run()
 	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent)
 	var/obj/item/bodypart/arm = patient.get_bodypart(BODY_ZONE_L_ARM)
-	TEST_ASSERT(patient.paradise_lazarus_necrotize(arm), "The Lazarus fixture did not necrotize its arm.")
-	var/datum/component/paradise_zombie_limb/necrosis = arm.GetComponent(/datum/component/paradise_zombie_limb)
+	var/datum/component/paradise_zombie_limb/necrosis = arm.AddComponent(/datum/component/paradise_zombie_limb, FALSE)
+	necrosis.necrotize()
 	TEST_ASSERT(necrosis && necrosis.necrotic && !necrosis.infected && arm.bodypart_disabled, "The fixture did not acquire independent, noninfectious necrosis.")
 	var/datum/disease/paradise_zombie/infection = new()
 	infection.infect(patient, FALSE)
 	infection.cure()
-	TEST_ASSERT_EQUAL(arm.GetComponent(/datum/component/paradise_zombie_limb), necrosis, "Curing a stage-one infection deleted an unrelated Lazarus necrosis component.")
+	TEST_ASSERT_EQUAL(arm.GetComponent(/datum/component/paradise_zombie_limb), necrosis, "Curing a stage-one infection deleted an unrelated necrosis component.")
 	TEST_ASSERT(necrosis.necrotic && !necrosis.infected && arm.bodypart_disabled, "Curing an early plague repaired tissue the infection never reached.")
 	allocated |= arm
 	arm.drop_limb(special = TRUE)

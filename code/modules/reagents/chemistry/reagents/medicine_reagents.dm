@@ -1062,6 +1062,24 @@
 		if(need_mob_update)
 			return UPDATE_MOB_HEALTH
 
+/datum/reagent/medicine/strange_reagent
+	name = "Strange Reagent"
+	description = "A miracle drug capable of bringing the dead back to life. Works topically unless anatomically complex, in which case works orally. Cannot revive targets under -%MAXHEALTHRATIO% health."
+	color = "#A0E85E"
+	metabolization_rate = 1.25 * REAGENTS_METABOLISM
+	taste_description = "magnets"
+	ph = 0.5
+	chemical_flags = REAGENT_CAN_BE_SYNTHESIZED
+	randomized_spawns = REAGENT_SPAWN_ALL_RANDOM_SPAWNS
+	/// The amount of damage a single unit of this will heal
+	var/healing_per_reagent_unit = 5
+	/// The ratio of the excess reagent used to contribute to excess healing
+	var/excess_healing_ratio = 0.8
+	/// Do we instantly revive
+	var/instant = FALSE
+	/// The maximum amount of damage we can revive from, as a ratio of max health
+	var/max_revive_damage_ratio = 2
+
 // To override for subtypes.
 /datum/reagent/medicine/strange_reagent/proc/pre_rez_check(atom/thing_to_rez)
 	return TRUE
@@ -1071,9 +1089,94 @@
 	instant = TRUE
 	chemical_flags = NONE
 
+/datum/reagent/medicine/strange_reagent/New()
+	. = ..()
+	description = replacetext(description, "%MAXHEALTHRATIO%", "[max_revive_damage_ratio * 100]%")
+	if(instant)
+		description += " It appears to be pulsing with a warm pink light."
+
 // FEED ME SEYMOUR
 /datum/reagent/medicine/strange_reagent/on_hydroponics_apply(obj/machinery/hydroponics/mytray, mob/user)
 	mytray.spawnplant()
+
+/// Calculates the amount of reagent to at a bare minimum make the target not dead
+/datum/reagent/medicine/strange_reagent/proc/calculate_amount_needed_to_revive(mob/living/benefactor)
+	var/their_health = benefactor.getMaxHealth() - (benefactor.get_brute_loss() + benefactor.get_fire_loss())
+	if(their_health > 0)
+		return 1
+
+	return round(-their_health / healing_per_reagent_unit, DAMAGE_PRECISION)
+
+/// Calculates the amount of reagent that will be needed to both revive and full heal the target. Looks at healing_per_reagent_unit and excess_healing_ratio
+/datum/reagent/medicine/strange_reagent/proc/calculate_amount_needed_to_full_heal(mob/living/benefactor)
+	var/their_health = benefactor.get_brute_loss() + benefactor.get_fire_loss()
+	var/max_health = benefactor.getMaxHealth()
+	if(their_health >= max_health)
+		return 1
+
+	var/amount_needed_to_revive = calculate_amount_needed_to_revive(benefactor)
+	var/expected_amount_to_full_heal = round(max_health / healing_per_reagent_unit, DAMAGE_PRECISION) / excess_healing_ratio
+	return amount_needed_to_revive + expected_amount_to_full_heal
+
+/datum/reagent/medicine/strange_reagent/expose_mob(mob/living/exposed_mob, methods=TOUCH, reac_volume)
+	if(exposed_mob.stat != DEAD || !(exposed_mob.mob_biotypes & MOB_ORGANIC))
+		return ..()
+
+	if(HAS_TRAIT(exposed_mob, TRAIT_SUICIDED)) //they are never coming back
+		exposed_mob.visible_message(span_warning("[exposed_mob]'s body does not react..."))
+		return
+
+	if(iscarbon(exposed_mob) && !(methods & (INGEST|INHALE))) //simplemobs can still be splashed
+		return ..()
+
+	if(HAS_TRAIT(exposed_mob, TRAIT_HUSK))
+		exposed_mob.visible_message(span_warning("[exposed_mob]'s body lets off a puff of smoke..."))
+		return
+
+	if((exposed_mob.get_brute_loss() + exposed_mob.get_fire_loss()) > (exposed_mob.getMaxHealth() * max_revive_damage_ratio))
+		exposed_mob.visible_message(span_warning("[exposed_mob]'s body convulses violently, before falling still..."))
+		return
+
+	var/needed_to_revive = calculate_amount_needed_to_revive(exposed_mob)
+	if(reac_volume < needed_to_revive)
+		exposed_mob.visible_message(span_warning("[exposed_mob]'s body convulses a bit, and then falls still once more."))
+		exposed_mob.do_jitter_animation(10)
+		return
+
+	if(!pre_rez_check(exposed_mob))
+		exposed_mob.visible_message(span_warning("[exposed_mob]'s body twitches slightly."))
+		exposed_mob.do_jitter_animation(1)
+		return
+
+	exposed_mob.visible_message(span_warning("[exposed_mob]'s body starts convulsing!"))
+	exposed_mob.notify_revival("Your body is being revived with Strange Reagent!")
+	exposed_mob.do_jitter_animation(10)
+
+	// we factor in healing needed when determing if we do anything
+	var/healing = needed_to_revive * healing_per_reagent_unit
+	// but excessive healing is penalized, to reward doctors who use the perfect amount
+	reac_volume -= needed_to_revive
+	healing += (reac_volume * healing_per_reagent_unit) * excess_healing_ratio
+
+	// during unit tests, we want it to happen immediately
+	if(instant)
+		exposed_mob.do_strange_reagent_revival(healing)
+	else
+		// jitter immediately, after four seconds, and after eight seconds
+		addtimer(CALLBACK(exposed_mob, TYPE_PROC_REF(/mob/living, do_jitter_animation), 1 SECONDS), 4 SECONDS)
+		addtimer(CALLBACK(exposed_mob, TYPE_PROC_REF(/mob/living, do_strange_reagent_revival), healing), 7 SECONDS)
+		addtimer(CALLBACK(exposed_mob, TYPE_PROC_REF(/mob/living, do_jitter_animation), 1 SECONDS), 8 SECONDS)
+
+	return ..()
+
+/datum/reagent/medicine/strange_reagent/on_mob_life(mob/living/carbon/affected_mob, seconds_per_tick, metabolization_ratio)
+	. = ..()
+	var/damage_at_random = rand(0, 250)/100 //0 to 2.5
+	var/need_mob_update
+	need_mob_update = affected_mob.adjust_brute_loss(0.4 * damage_at_random * metabolization_ratio * seconds_per_tick, updating_health = FALSE, required_bodytype = affected_bodytype)
+	need_mob_update += affected_mob.adjust_fire_loss(0.4 * damage_at_random * metabolization_ratio * seconds_per_tick, updating_health = FALSE, required_bodytype = affected_bodytype)
+	if(need_mob_update)
+		return UPDATE_MOB_HEALTH
 
 /datum/reagent/medicine/strange_reagent/fishy_reagent
 	name = "Fishy Reagent"

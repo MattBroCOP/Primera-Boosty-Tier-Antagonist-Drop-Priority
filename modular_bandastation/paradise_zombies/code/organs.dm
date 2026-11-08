@@ -5,7 +5,7 @@
 	dupe_mode = COMPONENT_DUPE_UNIQUE
 	/// Omega and full transformation can restore dead tissue while it remains marked as infected.
 	var/necrotic = FALSE
-	/// Necrosis from Lazarus is not plague infection until the disease reaches this limb.
+	/// Necrotic tissue becomes plague-infected only when the disease reaches this limb.
 	var/infected = FALSE
 	/// Tracks the owner whose transformation signals currently control limb usability.
 	var/datum/weakref/owner_ref
