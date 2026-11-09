@@ -232,11 +232,11 @@
 	var/click_frequency_to_use = 1 - frequency_to_use * 0.75
 	var/play_click = round(sqrt(max_ammo * 2)) > current_ammo
 	if(suppressed)
-		playsound(src, suppressed_sound, suppressed_volume, vary_fire_sound, ignore_walls = FALSE, extrarange = SILENCED_SOUND_EXTRARANGE, falloff_distance = 0)
+		playsound(src, suppressed_sound, suppressed_volume, vary_fire_sound, ignore_walls = FALSE, extrarange = SILENCED_SOUND_EXTRARANGE, falloff_distance = 0, audible_description = "выстрел")
 		if(play_click && click_on_low_ammo)
 			playsound(src, 'sound/items/weapons/gun/general/ballistic_click.ogg', suppressed_volume, vary_fire_sound, ignore_walls = FALSE, extrarange = SILENCED_SOUND_EXTRARANGE, falloff_distance = 0, frequency = click_frequency_to_use)
 	else
-		playsound(src, fire_sound, fire_sound_volume, vary_fire_sound)
+		playsound(src, fire_sound, fire_sound_volume, vary_fire_sound, audible_description = "выстрел")
 		if(play_click && click_on_low_ammo)
 			playsound(src, 'sound/items/weapons/gun/general/ballistic_click.ogg', fire_sound_volume, vary_fire_sound, frequency = click_frequency_to_use)
 

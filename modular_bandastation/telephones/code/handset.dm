@@ -56,6 +56,7 @@
 	RegisterSignal(holder, COMSIG_CAN_Z_MOVE, PROC_REF(on_tether_z_move))
 	RegisterSignal(holder, COMSIG_MOVABLE_MOVED, PROC_REF(on_holder_moved))
 	RegisterSignal(holder, COMSIG_QDELETING, PROC_REF(on_holder_deleted))
+	RegisterSignal(holder, COMSIG_MOB_HEARD_SOUND, PROC_REF(on_sound_heard))
 	check_tether()
 	update_beam()
 
@@ -126,7 +127,7 @@
 /** Releases the holder, movement listeners and cord before recall or deletion. */
 /obj/item/telephone/proc/clear_holder()
 	if(holder)
-		UnregisterSignal(holder, list(COMSIG_MOVABLE_PRE_MOVE, COMSIG_CAN_Z_MOVE, COMSIG_MOVABLE_MOVED, COMSIG_QDELETING))
+		UnregisterSignal(holder, list(COMSIG_MOVABLE_PRE_MOVE, COMSIG_CAN_Z_MOVE, COMSIG_MOVABLE_MOVED, COMSIG_QDELETING, COMSIG_MOB_HEARD_SOUND))
 		holder = null
 	raised = FALSE
 	inhand_icon_state = "rpb_phone"
@@ -190,18 +191,33 @@
 	SIGNAL_HANDLER
 	attached_to?.recall_phone()
 
+/// Resolves the off-hook peer shared by speech and recorded effects.
+/obj/item/telephone/proc/get_call_receiver()
+	if(attached_to?.status != PHONE_CONNECTED)
+		return null
+	var/obj/structure/transmitter/other = attached_to.current_call
+	if(other?.status != PHONE_CONNECTED || other.current_call != attached_to)
+		return null
+	var/obj/item/telephone/receiver = other.handset
+	if(QDELETED(receiver) || receiver.loc == other)
+		return null
+	return receiver
+
 /obj/item/telephone/Hear(atom/movable/speaker, datum/language/message_language, raw_message, radio_freq, radio_freq_name, radio_freq_color, list/spans, list/message_mods = list(), message_range = 0)
 	. = ..()
-	if(!raised || HAS_TRAIT(src, TRAIT_WIELDED) || speaker != holder || radio_freq || message_mods[MODE_RELAY] || !attached_to?.can_use_handset(holder))
+	if(!raised || HAS_TRAIT(src, TRAIT_WIELDED) || !isliving(speaker) || radio_freq || message_mods[MODE_RELAY] || !attached_to?.can_use_handset(holder))
 		return
 	if(HAS_TRAIT(speaker, TRAIT_SIGN_LANG) || message_mods[MODE_CUSTOM_SAY_ERASE_INPUT])
 		return
-	var/obj/structure/transmitter/other = attached_to.current_call
-	var/obj/item/telephone/receiver = other?.handset
-	if(attached_to.status != PHONE_CONNECTED || other?.status != PHONE_CONNECTED || other.current_call != attached_to)
+	if(speaker != holder)
+		var/turf/microphone_turf = get_turf(src)
+		var/turf/speaker_turf = get_turf(speaker)
+		if(!microphone_turf || !speaker_turf || microphone_turf.z != speaker_turf.z || get_dist(microphone_turf, speaker_turf) > min(PHONE_MIC_RANGE, message_range))
+			return
+	var/obj/item/telephone/receiver = get_call_receiver()
+	if(!receiver || receiver.holder == speaker)
 		return
-	if(QDELETED(receiver) || receiver.loc == other)
-		return
+	var/obj/structure/transmitter/other = receiver.attached_to
 
 	// Hear receives treated speech after saymodes, rather than the unfiltered COMSIG_MOB_SAY input.
 	var/list/relayed_mods = message_mods.Copy()
@@ -221,7 +237,7 @@
 	relayed_mods[SAY_MOD_VERB] = "тихо говорит"
 	relayed_mods[MODE_TTS_FILTERS] = list(/datum/singleton/sound_effect/radio, /datum/singleton/sound_effect/telephone_leak)
 	for(var/mob/living/listener in get_hearers_in_view(1, receiver))
-		if(listener == primary_listener)
+		if(listener == primary_listener || listener == speaker)
 			continue
 		voice.runechat_anchors[listener] = receiver
 		// Per-listener delivery keeps TTS private to this one-tile audience instead of its default spatial range.

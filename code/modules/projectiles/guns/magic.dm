@@ -61,9 +61,9 @@
 	playing_sound.pitch = pitch_to_use
 
 	if(suppressed)
-		playsound(src, playing_sound, suppressed_volume, vary_fire_sound, ignore_walls = FALSE, extrarange = SILENCED_SOUND_EXTRARANGE, falloff_distance = 0)
+		playsound(src, playing_sound, suppressed_volume, vary_fire_sound, ignore_walls = FALSE, extrarange = SILENCED_SOUND_EXTRARANGE, falloff_distance = 0, audible_description = "выстрел")
 	else
-		playsound(src, playing_sound, fire_sound_volume, vary_fire_sound)
+		playsound(src, playing_sound, fire_sound_volume, vary_fire_sound, audible_description = "выстрел")
 
 /**
  * Signal proc for [COMSIG_ITEM_MAGICALLY_CHARGED]

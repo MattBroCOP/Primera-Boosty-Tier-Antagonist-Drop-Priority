@@ -162,7 +162,9 @@
 	var/list/stopped_channels = list()
 	var/accept_audio = TRUE
 
-/mob/living/carbon/human/consistent/spacepod_alert_listener/playsound_local(turf/turf_source, soundin, vol as num, vary, frequency, falloff_exponent = SOUND_FALLOFF_EXPONENT, channel = 0, pressure_affected = TRUE, sound/sound_to_use, max_distance, falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE, distance_multiplier = 1, use_reverb = TRUE, wait = FALSE, datum/preference/numeric/volume/volume_preference = null, min_volume = 5)
+/mob/living/carbon/human/consistent/spacepod_alert_listener/playsound_local(turf/turf_source, soundin, vol as num, vary, frequency, falloff_exponent = SOUND_FALLOFF_EXPONENT, channel = 0, pressure_affected = TRUE, sound/sound_to_use, max_distance, falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE, distance_multiplier = 1, use_reverb = TRUE, wait = FALSE, datum/preference/numeric/volume/volume_preference = null, min_volume = 5, audible_description)
+	if(audible_description)
+		return ..()
 	if(findtext("[soundin]", "modular_bandastation/spacepods/sound/alerts/") == 1)
 		alert_audio += list(list("file" = soundin, "source" = turf_source, "channel" = channel, "volume" = vol, "vary" = vary, "pressure" = pressure_affected, "reverb" = use_reverb, "preference" = volume_preference))
 	return accept_audio

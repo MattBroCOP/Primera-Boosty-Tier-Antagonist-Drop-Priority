@@ -106,6 +106,7 @@ GAME_VERB_PROC(/mob/living/carbon/human, open_ipc_emote_panel, "Панель э�
 
 /datum/emote/living/ipc/scream
 	key = "scream"
+	audible_description = "сигнал тревоги"
 	key_third_person = "screams"
 	name = "Сигнал тревоги"
 	message = "издаёт резкий сигнал тревоги!"

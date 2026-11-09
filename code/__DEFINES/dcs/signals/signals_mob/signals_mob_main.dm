@@ -174,6 +174,9 @@
 	#define EMOTE_SOUND_TONGUE 1
 	#define EMOTE_SOUND_MASK 2
 	#define EMOTE_SOUND_STATUS_EFFECT 3
+/// From /mob/proc/playsound_local after sending a tagged spatial sound: (turf/source_turf, sound/played_sound, audible_description)
+/// The sound may be reused for other listeners. Copy it if you need to retain it.
+#define COMSIG_MOB_HEARD_SOUND "mob_heard_sound"
 /// from base of mob/cycle_hand(): (cycle_dir, climb, silent)<br>
 /// Ran before hand cycling behaviour is started<br>
 #define COMSIG_MOB_CYCLE_HAND "mob_cycle_hand"

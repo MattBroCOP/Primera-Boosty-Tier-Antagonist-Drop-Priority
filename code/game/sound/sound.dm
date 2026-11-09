@@ -15,8 +15,9 @@
  * * falloff_distance - Distance at which falloff begins. Sound is at peak volume (in regards to falloff) aslong as it is in this range.
  * * volume_preference - Optional: Will be checked to modify the volume of the sound for each listener.
  * * min_volume - minimum volume the sound can reach at max_range.
+ * * audible_description - Optional description for systems that capture this sound when a mob hears it.
  */
-/proc/playsound(atom/source, soundin, vol as num, vary, extrarange as num, falloff_exponent = SOUND_FALLOFF_EXPONENT, frequency = null, channel = 0, pressure_affected = TRUE, ignore_walls = TRUE, falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE, use_reverb = TRUE, datum/preference/numeric/volume/volume_preference = null, min_volume = 3)
+/proc/playsound(atom/source, soundin, vol as num, vary, extrarange as num, falloff_exponent = SOUND_FALLOFF_EXPONENT, frequency = null, channel = 0, pressure_affected = TRUE, ignore_walls = TRUE, falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE, use_reverb = TRUE, datum/preference/numeric/volume/volume_preference = null, min_volume = 3, audible_description)
 	if(isarea(source))
 		CRASH("playsound(): source is an area")
 
@@ -73,7 +74,7 @@
 		if(!mob_turf)
 			continue
 		if(get_dist_euclidean(mob_turf, turf_source) <= maxdistance)
-			listening_mob.playsound_local(turf_source, soundin, vol, vary, frequency, falloff_exponent, channel, pressure_affected, S, maxdistance, falloff_distance, 1, use_reverb, volume_preference)
+			listening_mob.playsound_local(turf_source, soundin, vol, vary, frequency, falloff_exponent, channel, pressure_affected, S, maxdistance, falloff_distance, 1, use_reverb, volume_preference, audible_description = audible_description)
 
 	return listeners
 
@@ -98,8 +99,10 @@
  * * wait - bool default FALSE, determines if we wait for the sound to finish // BANDASTATION ADDITION: Add wait arg
  * * volume_preference - Optional: Will be checked to modify the volume of the sound.
  * * min_volume - minimum volume the sound can reach at max_range.
+ * * audible_description - Optional description for systems that capture this sound when a mob hears it.
  */
-/mob/proc/playsound_local(turf/turf_source, soundin, vol as num, vary, frequency, falloff_exponent = SOUND_FALLOFF_EXPONENT, channel = 0, pressure_affected = TRUE, sound/sound_to_use, max_distance, falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE, distance_multiplier = 1, use_reverb = TRUE, wait = FALSE, datum/preference/numeric/volume/volume_preference = null, min_volume = 5) // BANDASTATION EDIT: Add wait arg
+/mob/proc/playsound_local(turf/turf_source, soundin, vol as num, vary, frequency, falloff_exponent = SOUND_FALLOFF_EXPONENT, channel = 0, pressure_affected = TRUE, sound/sound_to_use, max_distance, falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE, distance_multiplier = 1, use_reverb = TRUE, wait = FALSE, datum/preference/numeric/volume/volume_preference = null, min_volume = 5, audible_description) // BANDASTATION EDIT: Add wait arg
+	SHOULD_CALL_PARENT(TRUE)
 	if(!client || HAS_TRAIT(src, TRAIT_DEAF))
 		return
 
@@ -180,6 +183,8 @@
 		to_chat(src, span_admin("Max Range-[max_distance] Distance-[distance] Vol-[round(sound_to_use.volume, 0.01)] Sound-[sound_to_use.file]"))
 
 	SEND_SOUND(src, sound_to_use)
+	if(audible_description && isturf(turf_source) && sound_to_use.file && sound_to_use.volume > 0 && !(sound_to_use.status & (SOUND_UPDATE | SOUND_MUTE)))
+		SEND_SIGNAL(src, COMSIG_MOB_HEARD_SOUND, turf_source, sound_to_use, audible_description)
 	return TRUE
 
 /proc/sound_to_playing_players(soundin, volume = 100, vary = FALSE, frequency = 0, channel = 0, pressure_affected = FALSE, sound/S, datum/preference/numeric/volume/volume_preference = null)
@@ -226,6 +231,7 @@
  * Creates a soundtoken datum (a sound that updates for movement).
  * allowed_listeners is an optional list of mobs that are the only ones that can hear this sound ever.
  * sound_length is an optional length of the sound. Things like TTS need to pass this since we can't dynamically grab the length in that case.
+ * audible_description is an optional description for systems that capture this sound when a mob hears it.
  */
-/proc/playsoundtoken(atom/source, soundin, volume, range, falloff_exponent = SOUND_FALLOFF_EXPONENT, falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE, allowed_listeners, sound_length)
-	return new /datum/sound_token(source, soundin, range, volume, falloff_exponent, falloff_distance, allowed_listeners, sound_length, _delete_on_end = TRUE)
+/proc/playsoundtoken(atom/source, soundin, volume, range, falloff_exponent = SOUND_FALLOFF_EXPONENT, falloff_distance = SOUND_DEFAULT_FALLOFF_DISTANCE, allowed_listeners, sound_length, audible_description)
+	return new /datum/sound_token(source, soundin, range, volume, falloff_exponent, falloff_distance, allowed_listeners, sound_length, _delete_on_end = TRUE, audible_description = audible_description)

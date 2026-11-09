@@ -89,6 +89,51 @@
 	calling_user.say("Lowered sender", ignore_spam = TRUE)
 	TEST_ASSERT_EQUAL(received["count"], 4, "A lowered caller handset must not transmit.")
 
+/// The microphone picks up nearby voices within the actual audible range of their speech.
+/datum/unit_test/telephone/ambient_speech
+	parent_type = /datum/unit_test/telephone/speech_relay
+
+/datum/unit_test/telephone/ambient_speech/Run()
+	TEST_ASSERT_EQUAL(calling_phone.status, PHONE_CONNECTED, "The ambient speech fixture must connect its real phones.")
+	var/turf/adjacent = get_step(calling_user, NORTH)
+	var/turf/two_tiles_away = get_step(adjacent, NORTH)
+	var/turf/three_tiles_away = get_step(two_tiles_away, NORTH)
+	var/mob/living/carbon/human/consistent/nearby = allocate(/mob/living/carbon/human/consistent, adjacent)
+	nearby.set_species(/datum/species/lizard)
+	nearby.set_active_language(/datum/language/common)
+	observe(nearby)
+	// Count synthesis requests from the nearby speaker, excluding requests made in the holder's voice.
+	UnregisterSignal(calling_user, "atom_tts_cast")
+	RegisterSignal(nearby, "atom_tts_cast", TYPE_PROC_REF(/datum/unit_test/telephone/speech_relay, on_tts))
+	var/list/received = observations[receiving_user]
+	nearby.say("A third voice", ignore_spam = TRUE)
+	TEST_ASSERT_EQUAL(received["count"], 1, "The phone must relay an adjacent speaker.")
+	TEST_ASSERT_EQUAL(received["tts_count"], 1, "Synthesis must use the adjacent speaker's voice.")
+	nearby.whisper("An adjacent whisper", ignore_spam = TRUE)
+	TEST_ASSERT_EQUAL(received["count"], 2, "The phone must relay a whisper within one tile.")
+
+	nearby.forceMove(two_tiles_away)
+	nearby.say("Open ,o Hidden word ,0 again", ignore_spam = TRUE)
+	TEST_ASSERT_EQUAL(received["count"], 3, "The phone must relay speech from two tiles away once.")
+	TEST_ASSERT(findtext(received["message"], "Open") && findtext(received["message"], "again") && !findtext(received["message"], "Hidden word"), "The phone must preserve the known parts of mixed speech while concealing its unknown fragment.")
+	TEST_ASSERT_EQUAL(received["tts_message"], received["message"], "Synthesis must use the listener's translated ambient speech.")
+	nearby.whisper("A whisper beyond reach", ignore_spam = TRUE)
+	TEST_ASSERT_EQUAL(received["count"], 3, "The phone must not relay a whisper from two tiles away.")
+	nearby.forceMove(three_tiles_away)
+	nearby.say("Beyond the microphone", ignore_spam = TRUE)
+	TEST_ASSERT_EQUAL(received["count"], 3, "The phone must not relay ordinary speech from three tiles away.")
+
+	calling_phone.handset.attack_self_secondary(calling_user)
+	TEST_ASSERT(HAS_TRAIT(calling_phone.handset, TRAIT_WIELDED), "The caller must actually cover the microphone.")
+	nearby.forceMove(adjacent)
+	nearby.say("Covered nearby voice", ignore_spam = TRUE)
+	calling_user.say("Covered holder voice", ignore_spam = TRUE)
+	TEST_ASSERT_EQUAL(received["count"], 3, "Covering the microphone must mute both nearby speakers and the holder.")
+	nearby.forceMove(get_step(receiving_user, NORTH))
+	nearby.say("Incoming nearby voice", ignore_spam = TRUE)
+	var/list/reverse = observations[calling_user]
+	TEST_ASSERT_EQUAL(reverse["count"], 1, "A covered microphone must leave incoming ambient speech audible.")
+
 /// The holder hears once at normal volume; only adjacent bystanders hear quiet earpiece leakage.
 /datum/unit_test/telephone/speech_audibility
 	parent_type = /datum/unit_test/telephone/speech_relay

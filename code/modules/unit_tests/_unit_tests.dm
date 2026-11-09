@@ -490,6 +490,7 @@
 #include "../../../modular_bandastation/telephones/_defines.dm"
 #include "../../../modular_bandastation/telephones/code/telephone_tests.dm"
 #include "../../../modular_bandastation/telephones/code/telephone_speech_tests.dm"
+#include "../../../modular_bandastation/telephones/code/telephone_audio_tests.dm"
 
 #undef TEST_ASSERT
 #undef TEST_ASSERT_EQUAL

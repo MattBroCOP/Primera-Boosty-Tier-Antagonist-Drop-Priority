@@ -241,9 +241,9 @@
 
 /obj/item/gun/proc/fire_sounds()
 	if(suppressed)
-		playsound(src, suppressed_sound, suppressed_volume, vary_fire_sound, ignore_walls = FALSE, extrarange = SILENCED_SOUND_EXTRARANGE, falloff_distance = 0)
+		playsound(src, suppressed_sound, suppressed_volume, vary_fire_sound, ignore_walls = FALSE, extrarange = SILENCED_SOUND_EXTRARANGE, falloff_distance = 0, audible_description = "выстрел")
 	else
-		playsound(src, fire_sound, fire_sound_volume, vary_fire_sound)
+		playsound(src, fire_sound, fire_sound_volume, vary_fire_sound, audible_description = "выстрел")
 
 /obj/item/gun/proc/muzzle_flash_on()
 	if (can_muzzle_flash)

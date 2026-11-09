@@ -61,6 +61,8 @@
 	var/vary = FALSE
 	/// The volume of the sound
 	var/sound_volume = 50
+	/// Description used by systems that capture this emote's audible sound.
+	var/audible_description
 	/// Does this emote's sound ignore walls?
 	var/sound_wall_ignore = FALSE
 	/// If this emote's sound is affected by TTS pitch
@@ -145,9 +147,9 @@
 		else if(vary)
 			frequency = rand(MIN_EMOTE_PITCH, MAX_EMOTE_PITCH)
 		if(use_sound_tokens && sound_wall_ignore)
-			playsoundtoken(source = user, soundin = tmp_sound, range = SOUND_RANGE, volume = sound_volume)
+			playsoundtoken(source = user, soundin = tmp_sound, range = SOUND_RANGE, volume = sound_volume, audible_description = audible_description)
 		else
-			playsound(source = user,soundin = tmp_sound,vol = sound_volume, vary = vary, ignore_walls = sound_wall_ignore, frequency = frequency) // BANDASTATION EDIT - vary is optional
+			playsound(source = user, soundin = tmp_sound, vol = sound_volume, vary = vary, ignore_walls = sound_wall_ignore, frequency = frequency, audible_description = audible_description) // BANDASTATION EDIT - vary is optional
 
 
 	var/is_important = running_emote_type & EMOTE_IMPORTANT

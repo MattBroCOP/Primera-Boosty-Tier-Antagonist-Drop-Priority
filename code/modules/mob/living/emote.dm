@@ -304,6 +304,7 @@ BANDASTATION REMOVAL - END */
 
 /datum/emote/living/laugh
 	key = "laugh"
+	audible_description = "смех"
 	key_third_person = "laughs"
 	message = "laughs."
 	message_mime = "laughs silently!"
@@ -438,6 +439,7 @@ BANDASTATION REMOVAL - END */
 
 /datum/emote/living/scream
 	key = "scream"
+	audible_description = "крик"
 	key_third_person = "screams"
 	message = "screams!"
 	message_mime = "acts out a scream!"

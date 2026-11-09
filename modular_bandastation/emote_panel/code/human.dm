@@ -171,6 +171,7 @@
 
 /datum/emote/living/evil_laugh
 	key = "laughevil"
+	audible_description = "смех"
 	message = "злорадно смеётся."
 	message_mime = "бесшумно злорадно смеётся!"
 	emote_type = EMOTE_VISIBLE | EMOTE_AUDIBLE

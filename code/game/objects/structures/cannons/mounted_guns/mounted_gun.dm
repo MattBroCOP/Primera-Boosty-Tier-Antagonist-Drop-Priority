@@ -164,7 +164,7 @@
 	for(var/mob/shaken_mob in urange(3, src))
 		if(!IS_UNCONSCIOUS_OR_CRIT(shaken_mob) && firing_shakes_camera) //is the mob awake to feel the shaking?
 			shake_camera(shaken_mob, 3, 1)
-	playsound(src, shots_in_gun > 0 ? fire_sound : last_fire_sound, vol = 50, vary = FALSE, falloff_exponent = 5)
+	playsound(src, shots_in_gun > 0 ? fire_sound : last_fire_sound, vol = 50, vary = FALSE, falloff_exponent = 5, audible_description = "выстрел")
 	fire_gun(user)
 
 /// Actually finally shoot the thing

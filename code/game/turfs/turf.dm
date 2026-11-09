@@ -661,7 +661,7 @@ GLOBAL_LIST_EMPTY(station_turfs)
 
 /turf/handle_fall(mob/faller)
 	if(has_gravity(src))
-		playsound(src, SFX_BODYFALL, 50, TRUE)
+		playsound(src, SFX_BODYFALL, 50, TRUE, audible_description = "глухой удар")
 	faller.drop_all_held_items()
 
 /turf/proc/photograph(limit=20)

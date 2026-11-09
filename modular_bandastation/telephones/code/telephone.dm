@@ -24,6 +24,8 @@
 	var/obj/machinery/central_telephone_exchange/exchange
 	/// Call state, one of PHONE_*.
 	var/status = PHONE_IDLE
+	/// Identifies the connection when audio processing outlives its caller.
+	var/call_sequence = 0
 	/// Whether incoming calls should be rejected, except calls from Central Command.
 	var/do_not_disturb = FALSE
 	/// Network visible to callers; null hides incoming calls to payphones.
@@ -216,6 +218,8 @@
 	calling_phone.call_timer = TIMER_ID_NULL
 	status = PHONE_CONNECTED
 	calling_phone.status = PHONE_CONNECTED
+	call_sequence++
+	calling_phone.call_sequence++
 	calling_phone.is_paid = FALSE
 	set_call_sound(null)
 	calling_phone.set_call_sound(null)
