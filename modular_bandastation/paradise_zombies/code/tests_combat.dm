@@ -216,6 +216,30 @@
 	claws.melee_attack_chain(user, target, list())
 	TEST_ASSERT_EQUAL(target.get_brute_loss(), 0, "The actual melee chain bypassed the claw-specific full armour block.")
 
+/// A help click on a critical patient only starts CPR once the zombie is cured.
+/datum/unit_test/paradise_zombie_cannot_cpr
+	parent_type = /datum/unit_test/paradise_zombie_mutation_test
+
+/datum/unit_test/paradise_zombie_cannot_cpr/Run()
+	var/mob/living/carbon/human/zombie = make_zombie(run_loc_floor_bottom_left)
+	var/mob/living/carbon/human/patient = allocate(/mob/living/carbon/human/consistent, get_step(zombie, EAST))
+	patient.adjust_oxy_loss(patient.maxHealth - patient.crit_threshold + 3)
+	TEST_ASSERT(patient.body_position == LYING_DOWN && patient.stat != STABLE && patient.stat != DEAD, "The CPR patient was not in critical condition.")
+	var/datum/action/cooldown/paradise_zombie_claws/claws = locate() in zombie.actions
+	TEST_ASSERT(claws?.Activate() && claws.Activate(), "The fixture could not extend and retract its claws.")
+	TEST_ASSERT(zombie.start_pulling(patient), "The fixture could not grab the patient.")
+	zombie.setGrabState(GRAB_AGGRESSIVE)
+	zombie.set_combat_mode(FALSE)
+	var/oxy_before = patient.get_oxy_loss()
+	click_wrapper(zombie, patient)
+	TEST_ASSERT(!DOING_INTERACTION_WITH_TARGET(zombie, patient), "A zombie started CPR on the grabbed patient.")
+	TEST_ASSERT_EQUAL(patient.get_oxy_loss(), oxy_before, "A zombie performed CPR on the grabbed patient.")
+
+	var/datum/disease/paradise_zombie/infection = locate() in zombie.diseases
+	infection.cure()
+	click_wrapper(zombie, patient)
+	TEST_ASSERT(patient.get_oxy_loss() < oxy_before, "The same click did not perform CPR after cure.")
+
 /// A real unarmed attack with an aggressive grab must deliver a bite through bio protection and antibiotics.
 /datum/unit_test/paradise_zombie_grab_bite
 	parent_type = /datum/unit_test/paradise_zombie_combat

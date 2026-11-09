@@ -506,7 +506,7 @@
 
 /// Performs CPR on the target after a delay.
 /mob/living/carbon/human/proc/do_cpr(mob/living/carbon/target)
-	if(target == src)
+	if(target == src || HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE))
 		return
 
 	var/panicking = FALSE
@@ -548,7 +548,7 @@
 			balloon_alert(src, "у вас не получается провести СЛР!")
 			return FALSE
 
-		if (target.health > target.crit_threshold)
+		if (HAS_TRAIT(src, TRAIT_PARADISE_ZOMBIE) || target.health > target.crit_threshold)
 			return FALSE
 
 		visible_message(span_notice("[capitalize(declent_ru(NOMINATIVE))] проводит СЛР [target.declent_ru(DATIVE)]!"), span_notice("Вы проводите СЛР [target.declent_ru(DATIVE)]."))
