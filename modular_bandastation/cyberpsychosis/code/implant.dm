@@ -49,6 +49,8 @@
 	active_episode_ref = WEAKREF(episode)
 	RegisterSignal(episode, COMSIG_QDELETING, PROC_REF(on_episode_ended))
 	stop_action = new(src)
+	var/datum/action/item_action/hands_free/cyberpsychopath/toggle = locate() in actions
+	stop_action.set_key(toggle?.full_key)
 	stop_action.Grant(episode.backseat)
 	return TRUE
 
@@ -101,7 +103,7 @@
 	button_icon_state = "action"
 
 /datum/action/item_action/hands_free/cyberpsychopath/Trigger(mob/clicker, trigger_flags)
-	if(clicker != owner)
+	if(clicker && clicker != owner)
 		return FALSE
 	return ..()
 
@@ -114,7 +116,7 @@
 	can_be_shared = FALSE
 
 /datum/action/cyberpsychopath_stop/Trigger(mob/clicker, trigger_flags)
-	if(clicker != owner || !..())
+	if((clicker && clicker != owner) || !..())
 		return FALSE
 	var/obj/item/implant/cyberpsychopath/implant = target
 	if(QDELETED(implant) || implant.cybernetic_rejection)

@@ -40,6 +40,8 @@
 	backseat = new(owner)
 	backseat.body_ref = WEAKREF(owner)
 	backseat.episode_ref = WEAKREF(src)
+	backseat.static_until = world.time + 2 SECONDS
+	backseat.update_body_view()
 	backseat.copy_languages(owner.get_language_holder())
 	RegisterSignal(owner, COMSIG_MOB_CLIENT_LOGIN, PROC_REF(on_login))
 	RegisterSignal(owner, COMSIG_LIVING_DEATH, PROC_REF(on_death))
@@ -61,6 +63,8 @@
 	paused_ai?.clear_forced_off()
 	paused_ai_ref = null
 	if(backseat)
+		backseat.clear_fullscreen("cyberpsychosis_vignette", animated = FALSE)
+		backseat.clear_fullscreen("cyberpsychosis_static", animated = FALSE)
 		// Login can yield. Restore outside signal dispatch, with ownership rechecked there.
 		backseat.episode_ref = null
 		INVOKE_ASYNC(backseat, TYPE_PROC_REF(/mob/living/cyberpsychosis_backseat, return_to_body))

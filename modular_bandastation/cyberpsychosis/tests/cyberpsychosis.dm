@@ -161,6 +161,32 @@
 	human.changeNext_move(10)
 	TEST_ASSERT_EQUAL(human.next_move - world.time, baseline_delay, "Attack speed did not return to normal.")
 
+/// Onset interference expires while the vignette lasts, then both are cleaned up on end/death.
+/datum/unit_test/cyberpsychosis_visuals/Run()
+	for(var/effect_type in list(/datum/status_effect/forced_combat/cyberpsychosis, /datum/status_effect/forced_combat/cyberpsychosis/controlled))
+		var/mob/living/carbon/human/host = allocate(/mob/living/carbon/human/consistent)
+		var/datum/status_effect/forced_combat/cyberpsychosis/episode = host.apply_status_effect(effect_type)
+		var/mob/living/cyberpsychosis_backseat/seat = episode.backseat
+		var/atom/movable/screen/fullscreen/vignette = seat.screens["cyberpsychosis_vignette"]
+		var/atom/movable/screen/fullscreen/interference = seat.screens["cyberpsychosis_static"]
+		TEST_ASSERT_NOTNULL(vignette, "The episode did not create its private vignette.")
+		TEST_ASSERT_NOTNULL(interference, "The episode did not create onset interference.")
+		TEST_ASSERT_NULL(host.screens["cyberpsychosis_vignette"], "The private overlay was attached to the shared body.")
+		// Wait for the real episode ticks; allow scheduling slack without extending the effect.
+		var/deadline = world.time + 5 SECONDS
+		while(seat.screens["cyberpsychosis_static"] && world.time < deadline)
+			stoplag(1)
+		TEST_ASSERT_NULL(seat.screens["cyberpsychosis_static"], "Onset interference failed to expire.")
+		TEST_ASSERT(QDELETED(interference), "Expired interference leaked its screen object.")
+		TEST_ASSERT_EQUAL(seat.screens["cyberpsychosis_vignette"], vignette, "The vignette ended together with onset interference.")
+		seat.update_body_view()
+		TEST_ASSERT_NULL(seat.screens["cyberpsychosis_static"], "Refreshing the view restarted onset interference.")
+		if(effect_type == /datum/status_effect/forced_combat/cyberpsychosis/controlled)
+			host.death()
+		else
+			qdel(episode)
+		TEST_ASSERT(QDELETED(vignette) && QDELETED(seat), "Episode end/death leaked its vignette or seat.")
+
 /// Key handoff must retain the original mind and restore disconnected players too.
 /datum/unit_test/cyberpsychosis_control/Run()
 	var/mob/living/carbon/human/human = allocate(/mob/living/carbon/human/consistent)

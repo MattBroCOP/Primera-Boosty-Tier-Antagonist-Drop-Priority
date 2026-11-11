@@ -84,6 +84,41 @@
 	qdel(implant)
 	TEST_ASSERT(QDELETED(episode), "Deleting the implant leaked its controlled episode.")
 
+/// Keyboard dispatch omits clicker and must keep the same binding across the control handoff.
+/datum/unit_test/cyberpsychopath_hotkey/Run()
+	var/mob/living/carbon/human/host = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/implant/cyberpsychopath/implant = allocate(/obj/item/implant/cyberpsychopath)
+	implant.implant(host, silent = TRUE, force = TRUE)
+	var/datum/action/item_action/hands_free/cyberpsychopath/toggle = locate() in host.actions
+	TEST_ASSERT_NOTNULL(toggle, "The implant did not grant its action.")
+	toggle.set_key("F6")
+	// Exercise the real signal dispatched by mob.key_down, not Trigger with an explicit clicker.
+	SEND_SIGNAL(host, COMSIG_MOB_KEYDOWN, "F7", null, "F7")
+	TEST_ASSERT(!host.has_status_effect(/datum/status_effect/forced_combat/cyberpsychosis), "An unrelated key activated the implant.")
+	toggle.action_disabled = TRUE
+	SEND_SIGNAL(host, COMSIG_MOB_KEYDOWN, "F6", null, "F6")
+	TEST_ASSERT(!host.has_status_effect(/datum/status_effect/forced_combat/cyberpsychosis), "Keyboard input bypassed action availability.")
+	toggle.action_disabled = FALSE
+	host.next_click = 0 // The previous rejected input used the normal keyboard throttle.
+	SEND_SIGNAL(host, COMSIG_MOB_KEYDOWN, "F6", null, "F6")
+	var/datum/status_effect/forced_combat/cyberpsychosis/controlled/episode = implant.active_episode_ref?.resolve()
+	TEST_ASSERT_NOTNULL(episode, "The bound key did not activate the implant.")
+	var/mob/living/cyberpsychosis_backseat/seat = episode.backseat
+	SEND_SIGNAL(seat, COMSIG_MOB_KEYDOWN, "F7", null, "F7")
+	TEST_ASSERT(!QDELETED(episode), "An unrelated key stopped the episode.")
+	SEND_SIGNAL(seat, COMSIG_MOB_KEYDOWN, "F6", null, "F6")
+	TEST_ASSERT(QDELETED(episode), "The activation key did not stop the episode from the backseat.")
+	TEST_ASSERT(QDELETED(seat) && !implant.stop_action, "Hotkey shutdown leaked its seat or stop action.")
+	host.next_click = 0
+	SEND_SIGNAL(host, COMSIG_MOB_KEYDOWN, "F6", null, "F6")
+	TEST_ASSERT(!host.has_status_effect(/datum/status_effect/forced_combat/cyberpsychosis), "Keyboard input bypassed the implant cooldown.")
+	COOLDOWN_RESET(implant, reactivation_cooldown)
+	host.next_click = 0
+	SEND_SIGNAL(host, COMSIG_MOB_KEYDOWN, "F6", null, "F6")
+	episode = implant.active_episode_ref?.resolve()
+	TEST_ASSERT_NOTNULL(episode, "The activation binding was lost after returning to the body.")
+	qdel(episode)
+
 /// Actual hardware must suppress automatic overload only while at least one protector is installed.
 /datum/unit_test/cyberpsychopath_protection/Run()
 	var/mob/living/carbon/human/host = allocate(/mob/living/carbon/human/consistent)

@@ -4,6 +4,8 @@
 	/// Weak references avoid keeping deleted bodies/effects alive.
 	var/datum/weakref/body_ref
 	var/datum/weakref/episode_ref
+	/// Onset interference must expire with the episode's clock, including while disconnected.
+	var/static_until = 0
 
 /mob/living/cyberpsychosis_backseat/sync_mind()
 	return // The original mind must remain current in the real body.
@@ -46,7 +48,14 @@
 /// Mirror the body's sight, without observer vision or a movable camera.
 /mob/living/cyberpsychosis_backseat/proc/update_body_view()
 	var/mob/living/body = body_ref?.resolve()
-	if(!body || !client)
+	if(!body)
+		return
+	overlay_fullscreen("cyberpsychosis_vignette", /atom/movable/screen/fullscreen/brute/cyberpsychosis)
+	if(world.time < static_until)
+		overlay_fullscreen("cyberpsychosis_static", /atom/movable/screen/fullscreen/flash/static/cyberpsychosis)
+	else
+		clear_fullscreen("cyberpsychosis_static", animated = FALSE)
+	if(!client)
 		return
 	sight = body.sight
 	see_in_dark = body.see_in_dark
@@ -70,3 +79,13 @@
 		ghostize(FALSE)
 	if(!QDELETED(src))
 		qdel(src)
+
+/// Reuse the native red edge mask at low opacity, keeping the center and action buttons clear.
+/atom/movable/screen/fullscreen/brute/cyberpsychosis
+	icon_state = "brutedamageoverlay2"
+	alpha = 100
+
+/// Brief, low-opacity animated interference on the affected player's map viewport.
+/atom/movable/screen/fullscreen/flash/static/cyberpsychosis
+	color = "#ff6666"
+	alpha = 35
