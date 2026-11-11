@@ -1796,4 +1796,7 @@ Remember to update _globalvars/traits.dm if you're adding/removing/renaming trai
 /// Mobs with this trait will appear as human to medical scanners even if they are not human
 #define TRAIT_HUMAN_DISGUISE "human_disguise"
 
+/// A temporary control handoff must not mark or forcibly put the body to sleep as SSD.
+#define TRAIT_SSD_SUPPRESSED "ssd_suppressed"
+
 // END TRAIT DEFINES

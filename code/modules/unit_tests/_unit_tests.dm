@@ -111,6 +111,11 @@
 // BANDASTATION ADDITION - Lighting regression tests in the sorted include block
 // BEGIN_INCLUDE
 #include "../../../modular_bandastation/augmentation_preferences/code/tests/robotic_eyes_tests.dm"
+#include "../../../modular_bandastation/cyberpsychosis/tests/cyberpsychosis.dm"
+#include "../../../modular_bandastation/cyberpsychosis/tests/existing_effects.dm"
+#include "../../../modular_bandastation/cyberpsychosis/tests/health_scan.dm"
+#include "../../../modular_bandastation/cyberpsychosis/tests/implant.dm"
+#include "../../../modular_bandastation/cyberpsychosis/tests/ssd.dm"
 #include "../../../modular_bandastation/species/code/tests/ipc_appearance_tests.dm"
 #include "../../../modular_bandastation/species/code/tests/ipc_cleaning_tests.dm"
 #include "../../../modular_bandastation/species/code/tests/ipc_culinary_drink_tests.dm"

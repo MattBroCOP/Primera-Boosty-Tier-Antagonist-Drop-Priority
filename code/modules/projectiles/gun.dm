@@ -588,6 +588,9 @@
 	if(user && HAS_TRAIT(user, TRAIT_DOUBLE_TAP))
 		modified_burst_delay = ROUND_UP(burst_delay * 0.5)
 		modified_fire_delay = ROUND_UP(fire_delay * 0.5)
+	if(user?.has_status_effect(/datum/status_effect/forced_combat/cyberpsychosis))
+		modified_burst_delay *= 0.8
+		modified_fire_delay *= 0.8
 
 	if(burst_size > 1)
 		firing_burst = TRUE

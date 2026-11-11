@@ -54,6 +54,8 @@
 #define COMSIG_LIVING_MINOR_SHOCK "living_minor_shock"
 ///from base of mob/living/revive() (full_heal, admin_revive)
 #define COMSIG_LIVING_REVIVE "living_revive"
+/// After physical implantation/removal changes a living mob's implants list (including rejected hardware).
+#define COMSIG_LIVING_IMPLANTS_CHANGED "living_implants_changed"
 ///from base of mob/living/set_buckled(): (new_buckled)
 #define COMSIG_LIVING_SET_BUCKLED "living_set_buckled"
 ///from base of mob/living/set_body_position(): (new_position, old_position)

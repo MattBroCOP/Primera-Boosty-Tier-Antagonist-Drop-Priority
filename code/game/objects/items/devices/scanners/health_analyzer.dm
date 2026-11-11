@@ -344,6 +344,9 @@
 				render_list += "<hr>"
 			render_list += "<span class='notice ml-1'>Обнаруженные кибернетические модификации:</span><br>"
 			render_list += "<span class='notice ml-2'>[english_list(cyberimps, and_text = ", и ")]</span><br>"
+		var/datum/component/cyberpsychosis/cyberpsychosis = humantarget.GetComponent(/datum/component/cyberpsychosis)
+		if(cyberpsychosis)
+			render_list += cyberpsychosis.get_scan_report()
 
 		render_list += "<hr>"
 

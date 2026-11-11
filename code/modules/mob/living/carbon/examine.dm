@@ -246,9 +246,9 @@
 			var/npc_message = ""
 			if(HAS_TRAIT(brain, TRAIT_GHOSTROLE_ON_REVIVE) || HAS_TRAIT(src, TRAIT_GHOSTROLE_ON_REVIVE))
 				npc_message = "Душа всё ещё тут..."
-			else if(!key)
+			else if(!key && !HAS_TRAIT(src, TRAIT_SSD_SUPPRESSED))
 				npc_message = "[t_He] в полной кататонии. Стресс, связанный с жизнью в глубоком космосе, видимо, переселил [t_him]. Восстановление маловероятно."
-			else if(!client)
+			else if(!client && !HAS_TRAIT(src, TRAIT_SSD_SUPPRESSED))
 				npc_message ="У [ru_p_theirs()] пустой и рассеянный взгляд и, кажется, [ru_p_they()] совершенно ни на что не реагирует. [t_He], возможно, скоро опомнится."
 			if(npc_message)
 				// give some space since this is usually near the end

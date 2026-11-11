@@ -15,6 +15,7 @@ GLOBAL_VAR_INIT(ssd_indicator_overlay, mutable_appearance('modular_bandastation/
 	RegisterSignal(target, COMSIG_LIVING_DEATH, PROC_REF(on_mob_death))
 	RegisterSignal(target, COMSIG_LIVING_REVIVE, PROC_REF(on_mob_revive))
 	RegisterSignal(target, COMSIG_MOB_ADMIN_GHOSTED, PROC_REF(on_mob_admin_ghost))
+	RegisterSignals(target, list(SIGNAL_ADDTRAIT(TRAIT_SSD_SUPPRESSED), SIGNAL_REMOVETRAIT(TRAIT_SSD_SUPPRESSED)), PROC_REF(on_ssd_suppression_changed))
 	if(isAI(target))
 		RegisterSignal(target, COMSIG_MOB_MIND_TRANSFERRED_OUT_OF, PROC_REF(on_ai_mind_transfer))
 	if(iscyborg(target))
@@ -32,6 +33,8 @@ GLOBAL_VAR_INIT(ssd_indicator_overlay, mutable_appearance('modular_bandastation/
 		COMSIG_LIVING_DEATH,
 		COMSIG_LIVING_REVIVE,
 		COMSIG_MOB_ADMIN_GHOSTED,
+		SIGNAL_ADDTRAIT(TRAIT_SSD_SUPPRESSED),
+		SIGNAL_REMOVETRAIT(TRAIT_SSD_SUPPRESSED),
 	))
 	if(isAI(source))
 		UnregisterSignal(source, COMSIG_MOB_MIND_TRANSFERRED_OUT_OF)
@@ -43,9 +46,23 @@ GLOBAL_VAR_INIT(ssd_indicator_overlay, mutable_appearance('modular_bandastation/
 /datum/element/ssd/proc/on_mob_logout(mob/living/source)
 	SIGNAL_HANDLER
 
+	if(HAS_TRAIT(source, TRAIT_SSD_SUPPRESSED))
+		source.cut_overlay(GLOB.ssd_indicator_overlay)
+		source.player_logged = TRUE
+		return
 	if(source.stat != DEAD)
 		source.add_overlay(GLOB.ssd_indicator_overlay)
 	source.player_logged = FALSE
+
+/// Resume genuine offline behavior when a temporary body-control handoff ends.
+/datum/element/ssd/proc/on_ssd_suppression_changed(mob/living/source)
+	SIGNAL_HANDLER
+	if(QDELETED(source))
+		return
+	if(source.client && !HAS_TRAIT(source, TRAIT_SSD_SUPPRESSED))
+		handle_detach(source)
+	else
+		on_mob_logout(source)
 
 /datum/element/ssd/proc/handle_detach(mob/living/source)
 	source.cut_overlay(GLOB.ssd_indicator_overlay)
@@ -65,7 +82,8 @@ GLOBAL_VAR_INIT(ssd_indicator_overlay, mutable_appearance('modular_bandastation/
 /datum/element/ssd/proc/on_mob_revive(mob/living/source)
 	SIGNAL_HANDLER
 
-	source.add_overlay(GLOB.ssd_indicator_overlay)
+	if(!HAS_TRAIT(source, TRAIT_SSD_SUPPRESSED))
+		source.add_overlay(GLOB.ssd_indicator_overlay)
 
 /datum/element/ssd/proc/on_mob_admin_ghost(mob/living/source)
 	SIGNAL_HANDLER

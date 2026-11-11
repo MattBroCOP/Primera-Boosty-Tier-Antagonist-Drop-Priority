@@ -14,9 +14,6 @@
 	return ..()
 
 /datum/status_effect/forced_combat/tick(seconds_between_ticks)
-	var/prev_combat_mode = owner.combat_mode
-	owner.set_combat_mode(TRUE)
-
 	// If we're holding a gun, expand the range a bit.
 	// Otherwise, just look for adjacent targets
 	var/search_radius = isgun(owner.get_active_held_item()) ? 3 : 1
@@ -28,14 +25,19 @@
 		LAZYADD(targets, potential_target)
 
 	if(LAZYLEN(targets))
-		owner.log_message(" attacked someone due to the [id] debuff.", LOG_ATTACK) //the following attack will log itself
-		owner.ClickOn(pick(targets))
+		force_attack(pick(targets))
 		num_attacks -= 1
-
-	owner.set_combat_mode(prev_combat_mode)
 
 	if(num_attacks <= 0)
 		qdel(src)
+
+/// Shared held-item/unarmed attack for involuntary combat effects.
+/datum/status_effect/forced_combat/proc/force_attack(mob/living/target)
+	var/previous_mode = owner.combat_mode
+	owner.set_combat_mode(TRUE)
+	owner.log_message(" attacked someone due to the [id] debuff.", LOG_ATTACK)
+	owner.ClickOn(target)
+	owner.set_combat_mode(previous_mode)
 
 /datum/status_effect/forced_combat/proc/will_attack(mob/living/friendly)
 	return TRUE

@@ -151,6 +151,7 @@
 	forceMove(target)
 	imp_in = target
 	target.implants += src
+	SEND_SIGNAL(target, COMSIG_LIVING_IMPLANTS_CHANGED)
 	// BANDASTATION EDIT START - Rejected hardware has no functional interface
 	if(!cybernetic_rejection)
 		for(var/datum/action/implant_action as anything in actions)
@@ -198,6 +199,7 @@
 	moveToNullspace()
 	imp_in = null
 	source.implants -= src
+	SEND_SIGNAL(source, COMSIG_LIVING_IMPLANTS_CHANGED)
 	for(var/datum/action/implant_action as anything in actions)
 		implant_action.Remove(source)
 	if(ishuman(source))

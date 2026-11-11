@@ -108,6 +108,7 @@
 #include "weapon/_weapon.dme"
 #include "world_topics/_world_topics.dme"
 // --- MODULES END --- //
+#include "cyberpsychosis/_cyberpsychosis.dme"
 
 // --- PRIME --- //
 // #define DISABLE_PRIME_MODPACKS
