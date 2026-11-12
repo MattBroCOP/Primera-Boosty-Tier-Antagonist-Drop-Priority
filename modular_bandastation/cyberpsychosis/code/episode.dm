@@ -25,6 +25,12 @@
 	var/next_grab_resist = 0
 	/// Temporarily unreachable targets are skipped until this time.
 	var/list/failed_targets = list()
+	/// An EMP fault locks the episode against manual shutdown, even after hardware removal.
+	var/emp_overloaded = FALSE
+	/// Remaining-duration threshold for the next one-point brain injury; negative when exhausted.
+	var/next_emp_damage = 0
+	/// EMP damage needs every processing cycle; retain the normal target/view refresh cadence.
+	var/next_emp_ai_update = 0
 
 /datum/status_effect/forced_combat/cyberpsychosis/on_creation(mob/living/new_owner, duration = 40 SECONDS)
 	return ..(new_owner, duration)
@@ -109,10 +115,36 @@
 		SEND_SOUND(sound_listener, sound(null, channel = sound_channel))
 	sound_listener = null
 
+/// Upgrade an existing episode in place, preserving its client handoff and rejecting repeated faults.
+/datum/status_effect/forced_combat/cyberpsychosis/proc/begin_emp_overload()
+	if(emp_overloaded || QDELETED(owner) || owner.stat == DEAD)
+		return FALSE
+	emp_overloaded = TRUE
+	duration = 40 SECONDS
+	tick_interval = STATUS_EFFECT_AUTO_TICK
+	next_emp_damage = duration - 2 SECONDS
+	next_emp_ai_update = world.time
+	backseat.static_until = world.time + 2 SECONDS
+	backseat.update_body_view()
+	return TRUE
+
 /datum/status_effect/forced_combat/cyberpsychosis/tick(seconds_between_ticks)
+	if(owner.stat != DEAD && emp_overloaded)
+		// Use consumed duration so delayed processing catches up, including the final injury at 40s.
+		while(next_emp_damage >= 0 && duration <= next_emp_damage)
+			next_emp_damage -= 2 SECONDS
+			owner.adjust_organ_loss(ORGAN_SLOT_BRAIN, 1)
+			if(QDELETED(src) || QDELETED(owner))
+				return
+			if(owner.stat == DEAD)
+				break
 	if(owner.stat == DEAD || duration <= 0)
 		qdel(src)
 		return
+	if(emp_overloaded)
+		if(world.time < next_emp_ai_update)
+			return
+		next_emp_ai_update = world.time + 0.5 SECONDS
 	if(world.time >= next_laugh)
 		laugh()
 	backseat?.update_body_view()

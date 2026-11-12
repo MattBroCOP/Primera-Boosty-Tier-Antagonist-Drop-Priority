@@ -9,9 +9,9 @@
 	/// One stoppable timer, only scheduled while alive, overloaded and outside an episode.
 	var/buildup_timer
 	/// Largest safe installed burden.
-	var/static/safe_load = 20
+	var/static/safe_load = 15
 	/// Interval between discrete buildup increments.
-	var/static/buildup_interval = 30 SECONDS
+	var/static/buildup_interval = 10 SECONDS
 
 /datum/component/cyberpsychosis/Initialize()
 	if(!ishuman(parent))
@@ -58,7 +58,7 @@
 		return
 	buildup_timer = addtimer(CALLBACK(src, PROC_REF(advance_buildup)), buildup_interval, TIMER_STOPPABLE)
 
-/// Apply a single 30-second increment using the currently installed burden.
+/// Apply a single 10-second increment using the currently installed burden.
 /datum/component/cyberpsychosis/proc/advance_buildup()
 	buildup_timer = null
 	var/mob/living/human = parent

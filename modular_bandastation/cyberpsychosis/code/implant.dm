@@ -1,14 +1,14 @@
 /// Manually toggled cyberpsychosis; the user controls only when the episode starts/stops.
 /obj/item/implant/cyberpsychopath
 	name = "Cyberpsychopath"
-	desc = "Контрабандный имплант управляемого запуска киберпсихоза. Приступ длится до 20 секунд; после выключения требуется 20 секунд на восстановление."
+	desc = "Контрабандный имплант управляемого запуска киберпсихоза. Приступ длится до 20 секунд; после выключения требуется 20 секунд на восстановление. Уязвим к ЭМИ: сбой вызывает длительный неконтролируемый приступ с повреждением мозга."
 	icon = 'modular_bandastation/cyberpsychosis/icons/cyberpsychopath.dmi'
 	icon_state = "implant"
 	implant_color = "r"
 	cyberpsychosis_load = 0
 	actions_types = list(/datum/action/item_action/hands_free/cyberpsychopath)
-	implant_info = "Ручное включение и выключение. Во время приступа доступна только кнопка отключения; движение и атаки выполняются автоматически."
-	/// Only the episode started by this particular implant can be stopped by it.
+	implant_info = "В штатном режиме доступны ручное включение и выключение; движение и атаки выполняются автоматически. ЭМИ вызывает сбой, который нельзя отключить вручную."
+	/// Track this implant's episode for cleanup/cooldown; EMP-locked episodes cannot be stopped.
 	var/datum/weakref/active_episode_ref
 	/// Separate action on the backseat; the body's other actions are never granted there.
 	var/datum/action/cyberpsychopath_stop/stop_action
@@ -21,6 +21,9 @@
 
 /obj/item/implant/cyberpsychopath/Destroy()
 	stop_episode()
+	var/datum/status_effect/forced_combat/cyberpsychosis/episode = active_episode_ref?.resolve()
+	if(episode)
+		UnregisterSignal(episode, COMSIG_QDELETING)
 	QDEL_NULL(stop_action)
 	active_episode_ref = null
 	return ..()
@@ -28,8 +31,39 @@
 /obj/item/implant/cyberpsychopath/can_be_implanted_in(mob/living/target)
 	return ..() && ishuman(target)
 
+/// Both unshielded EMP strengths force the same fault, bypassing manual cooldown and controls.
+/obj/item/implant/cyberpsychopath/emp_act(severity)
+	. = ..()
+	if((. & EMP_PROTECT_SELF) || cybernetic_rejection || !ishuman(imp_in) || imp_in.stat == DEAD)
+		return
+	var/datum/status_effect/forced_combat/cyberpsychosis/episode = imp_in.has_status_effect(/datum/status_effect/forced_combat/cyberpsychosis)
+	var/created_episode = !episode
+	if(created_episode)
+		episode = imp_in.apply_status_effect(/datum/status_effect/forced_combat/cyberpsychosis)
+	if(QDELETED(episode))
+		return
+	if(QDELETED(src) || imp_in != episode.owner || cybernetic_rejection)
+		if(created_episode)
+			qdel(episode)
+		return
+	if(!episode.begin_emp_overload())
+		return
+	var/datum/status_effect/forced_combat/cyberpsychosis/previous_episode = active_episode_ref?.resolve()
+	if(previous_episode != episode)
+		if(previous_episode)
+			UnregisterSignal(previous_episode, COMSIG_QDELETING)
+		active_episode_ref = WEAKREF(episode)
+		RegisterSignal(episode, COMSIG_QDELETING, PROC_REF(on_episode_ended))
+	QDEL_NULL(stop_action)
+	to_chat(episode.backseat, span_userdanger("ЭМИ выводит Cyberpsychopath из-под контроля! Приступ невозможно остановить вручную!"))
+
 /obj/item/implant/cyberpsychopath/on_activate()
 	. = ..()
+	var/datum/status_effect/forced_combat/cyberpsychosis/active_episode = active_episode_ref?.resolve()
+	if(active_episode?.emp_overloaded)
+		if(imp_in)
+			to_chat(imp_in, span_warning("Cyberpsychopath заблокирован сбоем ЭМИ. Дождитесь окончания приступа."))
+		return FALSE
 	if(stop_episode())
 		return TRUE
 	if(!ishuman(imp_in) || imp_in.stat == DEAD)
@@ -58,7 +92,7 @@
 	stop_episode()
 	return ..()
 
-/// Termination by button, expiry, death, extraction or rejection all starts the same cooldown.
+/// Any completed episode starts cooldown, including death during an otherwise locked EMP fault.
 /obj/item/implant/cyberpsychopath/proc/on_episode_ended(datum/source)
 	SIGNAL_HANDLER
 	UnregisterSignal(source, COMSIG_QDELETING)
@@ -66,10 +100,10 @@
 	QDEL_NULL(stop_action)
 	COOLDOWN_START(src, reactivation_cooldown, 20 SECONDS)
 
-/// Never remove a spontaneous episode or another implant's effect.
+/// Never remove an EMP-locked episode, a spontaneous episode or another implant's effect.
 /obj/item/implant/cyberpsychopath/proc/stop_episode()
-	var/datum/status_effect/forced_combat/cyberpsychosis/controlled/episode = active_episode_ref?.resolve()
-	if(QDELETED(episode))
+	var/datum/status_effect/forced_combat/cyberpsychosis/episode = active_episode_ref?.resolve()
+	if(QDELETED(episode) || episode.emp_overloaded)
 		return FALSE
 	qdel(episode)
 	return TRUE
@@ -84,7 +118,7 @@
 
 /datum/uplink_item/implants/cyberpsychopath
 	name = "Cyberpsychopath"
-	desc = "Имплант с инъектором. Пока имплант установлен, самопроизвольные приступы киберпсихоза не возникают. По команде запускает управляемый приступ на 20 секунд: тело само преследует и атакует окружающих. Управление телом недоступно; можно только досрочно отключить имплант отдельной кнопкой. После любого завершения — перезарядка 20 секунд."
+	desc = "Имплант с инъектором. Пока имплант установлен, самопроизвольные приступы киберпсихоза не возникают. По команде запускает управляемый приступ на 20 секунд: тело само преследует и атакует окружающих. Управление телом недоступно; можно только досрочно отключить имплант отдельной кнопкой. Уязвим к ЭМИ: сбой вызывает неотключаемый приступ на 40 секунд с повреждением мозга. После любого завершения — перезарядка 20 секунд."
 	item = /obj/item/implanter/cyberpsychopath
 	cost = 8
 
