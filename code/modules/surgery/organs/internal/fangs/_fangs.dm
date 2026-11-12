@@ -118,7 +118,7 @@
 	. = ..()
 	if(. & EMP_PROTECT_SELF)
 		return
-	var/obj/item/organ/tongue/tongue_to_bite = owner
+	var/obj/item/organ/tongue/tongue_to_bite = owner?.get_organ_slot(ORGAN_SLOT_TONGUE)
 	if(tongue_to_bite)
 		to_chat(owner, span_danger("You bite down on your own tongue!"))
 		tongue_to_bite.apply_organ_damage(bite_high)
