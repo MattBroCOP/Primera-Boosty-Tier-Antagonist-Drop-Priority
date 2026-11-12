@@ -104,10 +104,14 @@
 /datum/status_effect/forced_combat/cyberpsychosis/proc/play_ambience()
 	if(!backseat?.client || QDELETED(owner))
 		return
-	var/track = owner.gender == FEMALE ? 'modular_bandastation/cyberpsychosis/sound/edgerunner-fury-female.ogg' : 'modular_bandastation/cyberpsychosis/sound/edgerunner-fury-male.ogg'
 	stop_ambience()
 	sound_listener = backseat.client
-	SEND_SOUND(sound_listener, sound(track, repeat = TRUE, channel = sound_channel, volume = 60))
+	SEND_SOUND(sound_listener, get_ambience_sound())
+
+/// Both listeners hear the body's gender-specific track, on independently owned channels.
+/datum/status_effect/forced_combat/cyberpsychosis/proc/get_ambience_sound(channel = sound_channel)
+	var/track = owner.gender == FEMALE ? 'modular_bandastation/cyberpsychosis/sound/edgerunner-fury-female.ogg' : 'modular_bandastation/cyberpsychosis/sound/edgerunner-fury-male.ogg'
+	return sound(track, repeat = TRUE, channel = channel, volume = 60)
 
 /// Stop only this episode's channel, including if the listener has become a ghost.
 /datum/status_effect/forced_combat/cyberpsychosis/proc/stop_ambience()
@@ -148,6 +152,8 @@
 	if(world.time >= next_laugh)
 		laugh()
 	backseat?.update_body_view()
+	if(!uses_automatic_combat())
+		return
 	var/mob/living/target = select_target()
 	if(target != target_ref?.resolve())
 		QDEL_NULL(pursuit)
@@ -213,10 +219,14 @@
 	if(QDELETED(owner) || owner.stat == DEAD || duration <= 0)
 		qdel(src)
 		return
-	if(owner.next_move <= world.time && !IS_UNCONSCIOUS_OR_CRIT(owner))
+	if(uses_automatic_combat() && owner.next_move <= world.time && !IS_UNCONSCIOUS_OR_CRIT(owner))
 		perform_attack()
 	if(!QDELETED(src))
 		attack_timer = addtimer(CALLBACK(src, PROC_REF(attack)), max(world.tick_lag, owner.next_move - world.time), TIMER_STOPPABLE)
+
+/// A volunteer-controlled episode suspends automatic pursuit and attacks.
+/datum/status_effect/forced_combat/cyberpsychosis/proc/uses_automatic_combat()
+	return TRUE
 
 /// Select one target for the inherited EMP attack implementation.
 /datum/status_effect/forced_combat/cyberpsychosis/proc/perform_attack()

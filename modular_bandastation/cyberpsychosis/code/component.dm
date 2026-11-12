@@ -66,9 +66,51 @@
 		return
 	buildup = min(100, buildup + load - safe_load)
 	if(buildup >= 100)
-		human.apply_status_effect(/datum/status_effect/forced_combat/cyberpsychosis)
+		trigger_overload()
 	else
 		schedule_buildup()
+
+/// Smite can force an outcome without burden or hardware checks; death and existing episodes still block it.
+/datum/component/cyberpsychosis/proc/trigger_overload(outcome = pick("berserk", "explosion", "possession"), forced = FALSE)
+	var/mob/living/human = parent
+	if(QDELETED(human) || human.stat == DEAD || human.has_status_effect(/datum/status_effect/forced_combat/cyberpsychosis))
+		return FALSE
+	if(!forced && (buildup_blocked || load <= safe_load))
+		return FALSE
+	switch(outcome)
+		if("berserk")
+			return !!human.apply_status_effect(/datum/status_effect/forced_combat/cyberpsychosis)
+		if("possession")
+			return !!human.apply_status_effect(/datum/status_effect/forced_combat/cyberpsychosis/possession)
+		if("explosion")
+			buildup = 0
+			stop_timer()
+			human.visible_message(span_userdanger("Кибернетика [human] взрывается!"))
+			var/obj/effect/temp_visual/explosion/fast/visual = new(get_turf(human))
+			visual.transform = matrix().Scale(1 / 3)
+			playsound(human, get_sfx(SFX_EXPLOSION), 60, TRUE)
+			// Normal ex_act can launch severed limbs outside its blast radius. Keep this burst local.
+			var/list/victims = list(human)
+			var/turf/epicenter = get_turf(human)
+			var/source_name = key_name(human)
+			if(epicenter)
+				for(var/mob/living/victim in epicenter)
+					victims |= victim
+			for(var/mob/living/victim as anything in victims)
+				if(QDELETED(victim))
+					continue
+				victim.log_message("was hit by an implant overload explosion from [source_name].", LOG_ATTACK)
+				var/bomb_armor = victim.getarmor(null, BOMB)
+				victim.apply_damage(50, BRUTE, blocked = bomb_armor, wound_bonus = CANT_WOUND)
+				if(QDELETED(victim))
+					continue
+				victim.apply_damage(50, BURN, blocked = bomb_armor, wound_bonus = CANT_WOUND)
+				if(!QDELETED(victim))
+					victim.Knockdown(4 SECONDS)
+			if(!QDELETED(src))
+				schedule_buildup()
+			return TRUE
+	return FALSE
 
 /// Cancel a pending increment on death, safe burden or episode start.
 /datum/component/cyberpsychosis/proc/stop_timer()

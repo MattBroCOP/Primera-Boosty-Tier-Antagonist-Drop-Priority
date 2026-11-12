@@ -61,7 +61,8 @@
 /// Exercise the production callbacks with physically implanted hardware, including death/revival.
 /datum/unit_test/cyberpsychosis_buildup/Run()
 	var/mob/living/carbon/human/human = allocate(/mob/living/carbon/human/consistent)
-	var/datum/component/cyberpsychosis/load = human.GetComponent(/datum/component/cyberpsychosis)
+	qdel(human.GetComponent(/datum/component/cyberpsychosis))
+	var/datum/component/cyberpsychosis/load = human.AddComponent(/datum/component/cyberpsychosis/test_outcome)
 	var/obj/item/organ/liver/cybernetic/tier2/liver = allocate(/obj/item/organ/liver/cybernetic/tier2)
 	liver.Insert(human)
 	for(var/index in 1 to 7)
@@ -236,7 +237,8 @@
 	for(var/species_type in species_types)
 		var/mob/living/carbon/human/human = allocate(/mob/living/carbon/human/consistent)
 		human.set_species(species_type)
-		var/datum/component/cyberpsychosis/load = human.GetComponent(/datum/component/cyberpsychosis)
+		qdel(human.GetComponent(/datum/component/cyberpsychosis))
+		var/datum/component/cyberpsychosis/load = human.AddComponent(/datum/component/cyberpsychosis/test_outcome)
 		var/native_load = species_type == /datum/species/android ? 1 : 0
 		TEST_ASSERT_EQUAL(load.load, native_load, "Unexpected native organ burden for [species_type].")
 		for(var/index in 1 to 11)

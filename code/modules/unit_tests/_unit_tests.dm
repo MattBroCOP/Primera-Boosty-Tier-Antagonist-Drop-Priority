@@ -115,6 +115,7 @@
 #include "../../../modular_bandastation/cyberpsychosis/tests/existing_effects.dm"
 #include "../../../modular_bandastation/cyberpsychosis/tests/health_scan.dm"
 #include "../../../modular_bandastation/cyberpsychosis/tests/implant.dm"
+#include "../../../modular_bandastation/cyberpsychosis/tests/outcomes.dm"
 #include "../../../modular_bandastation/cyberpsychosis/tests/ssd.dm"
 #include "../../../modular_bandastation/species/code/tests/ipc_appearance_tests.dm"
 #include "../../../modular_bandastation/species/code/tests/ipc_cleaning_tests.dm"
