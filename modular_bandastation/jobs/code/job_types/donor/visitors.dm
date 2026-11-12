@@ -210,6 +210,11 @@
 	job_flags = parent_type::job_flags | JOB_ANTAG_PROTECTED
 	donor_spawn_landmark = JOB_ASSISTANT
 
+/datum/job/donor/navy_junior_officer/after_spawn(mob/living/spawned, client/player_client)
+	. = ..()
+	var/datum/component/cyberpsychosis/cyberpsychosis = spawned.GetComponent(/datum/component/cyberpsychosis)
+	cyberpsychosis?.grant_elite_tolerance()
+
 /datum/outfit/job/donor/navy_junior_officer
 	name = "Nanotrasen Navy Junior Officer"
 	jobtype = /datum/job/donor/navy_junior_officer

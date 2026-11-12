@@ -33,11 +33,14 @@
 
 /// Shared held-item/unarmed attack for involuntary combat effects.
 /datum/status_effect/forced_combat/proc/force_attack(mob/living/target)
-	var/previous_mode = owner.combat_mode
-	owner.set_combat_mode(TRUE)
-	owner.log_message(" attacked someone due to the [id] debuff.", LOG_ATTACK)
-	owner.ClickOn(target)
-	owner.set_combat_mode(previous_mode)
+	var/mob/living/attacker = owner
+	var/previous_mode = attacker.combat_mode
+	attacker.set_combat_mode(TRUE)
+	attacker.log_message(" attacked someone due to the [id] debuff.", LOG_ATTACK)
+	attacker.ClickOn(target)
+	// A click can remove the effect and clear its owner before we return.
+	if(!QDELETED(attacker))
+		attacker.set_combat_mode(previous_mode)
 
 /datum/status_effect/forced_combat/proc/will_attack(mob/living/friendly)
 	return TRUE

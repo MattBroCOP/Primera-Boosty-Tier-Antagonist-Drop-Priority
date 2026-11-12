@@ -4,6 +4,16 @@
 	. = ..()
 	if(centcom_member.mind)
 		centcom_member.mind.centcom_role = CENTCOM_ROLE_OFFICER
+	var/static/list/elite_outfits = list(
+		/datum/outfit/centcom/centcom_official,
+		/datum/outfit/centcom/centcom_intern,
+		/datum/outfit/centcom/commander,
+		/datum/outfit/centcom/spec_ops,
+		/datum/outfit/centcom/death_commando,
+	)
+	if(!visuals_only && is_type_in_list(src, elite_outfits))
+		var/datum/component/cyberpsychosis/cyberpsychosis = centcom_member.GetComponent(/datum/component/cyberpsychosis)
+		cyberpsychosis?.grant_elite_tolerance()
 
 // Old Fashion CentCom Commander
 /datum/outfit/centcom/spec_ops/old

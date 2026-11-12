@@ -133,6 +133,7 @@
 	human.changeNext_move(10)
 	var/baseline_delay = human.next_move - world.time
 	var/datum/status_effect/forced_combat/cyberpsychosis/episode = human.apply_status_effect(/datum/status_effect/forced_combat/cyberpsychosis)
+	TEST_ASSERT_NULL(episode.attack_timer, "An episode without a selected target scheduled an attack.")
 	episode.target_ref = WEAKREF(current)
 	TEST_ASSERT_EQUAL(episode.select_target(), current, "A target closer than four tiles was abandoned.")
 	current.forceMove(locate(origin.x + 4, origin.y, origin.z))
@@ -153,6 +154,7 @@
 	TEST_ASSERT(!seat.Move(get_step(origin, NORTH)), "The backseat can move independently.")
 	TEST_ASSERT(!seat.try_speak("test"), "The backseat can speak.")
 	episode.tick(0.5)
+	TEST_ASSERT_NOTNULL(episode.attack_timer, "Acquiring a target did not schedule an attack.")
 	var/datum/move_loop/loop = episode.pursuit
 	if(loop)
 		ADD_TRAIT(human, TRAIT_IMMOBILIZED, TRAIT_SOURCE_UNIT_TESTS)
@@ -261,3 +263,103 @@
 		human.death()
 		TEST_ASSERT_NULL(load.buildup_timer, "Dead [species_type] kept accumulating.")
 		qdel(human)
+
+/// Receiving an elite role raises only the tolerance of the body that received it.
+/datum/unit_test/cyberpsychosis_role_tolerance/Run()
+	var/mob/living/carbon/human/first_body = allocate(/mob/living/carbon/human/consistent)
+	var/mob/living/carbon/human/second_body = allocate(/mob/living/carbon/human/consistent)
+	for(var/mob/living/carbon/human/body in list(first_body, second_body))
+		for(var/index in 1 to 10)
+			var/obj/item/implant/tracking/tracker = allocate(/obj/item/implant/tracking)
+			tracker.allow_multiple = TRUE
+			tracker.implant(body, silent = TRUE, force = TRUE)
+		var/obj/item/implant/emp/emp = allocate(/obj/item/implant/emp)
+		emp.implant(body, silent = TRUE, force = TRUE)
+
+	first_body.mind_initialize()
+	var/datum/mind/character = first_body.mind
+	var/datum/component/cyberpsychosis/first_load = first_body.GetComponent(/datum/component/cyberpsychosis)
+	var/datum/component/cyberpsychosis/second_load = second_body.GetComponent(/datum/component/cyberpsychosis)
+	TEST_ASSERT_EQUAL(first_load.load, 23, "Fixture must physically install exactly 23 points.")
+	TEST_ASSERT_NOTNULL(first_load.buildup_timer, "A regular character should already be overloaded.")
+	first_load.buildup = 10
+	var/datum/antagonist/nukeop/operative = allocate(/datum/antagonist/nukeop)
+	operative.silent = TRUE
+	operative.nukeop_outfit = null
+	operative.send_to_spawnpoint = FALSE
+	operative.give_bonus_tc = FALSE
+	var/datum/team/nuclear/team = allocate(/datum/team/nuclear)
+	character.add_antag_datum(operative, team)
+	TEST_ASSERT_NULL(first_load.buildup_timer, "A nuclear operative should tolerate 23 points.")
+	TEST_ASSERT_EQUAL(first_load.buildup, 0, "Entering the safe range should clear existing buildup.")
+
+	var/obj/item/organ/eyes/robotic/eyes = allocate(/obj/item/organ/eyes/robotic)
+	eyes.Insert(first_body, special = TRUE)
+	TEST_ASSERT_EQUAL(first_load.load, 24, "Fixture must cross the elevated threshold by one point.")
+	TEST_ASSERT_NOTNULL(first_load.buildup_timer, "The operative should be overloaded at 24 points.")
+	first_load.stop_timer()
+	first_load.advance_buildup()
+	TEST_ASSERT_EQUAL(first_load.buildup, 1, "Overload buildup must use the body's threshold.")
+	eyes.Remove(first_body, special = TRUE)
+
+	character.transfer_to(second_body)
+	TEST_ASSERT_NULL(first_load.buildup_timer, "Tolerance left the original body with the mind.")
+	TEST_ASSERT_NOTNULL(second_load.buildup_timer, "An unmodified body inherited the operative's tolerance.")
+	character.remove_antag_datum(/datum/antagonist/nukeop)
+
+	for(var/role_type in list(/datum/antagonist/ert/official, /datum/antagonist/ert/deathsquad, /datum/antagonist/ert/deathsquad/leader, /datum/antagonist/ert/security))
+		var/mob/living/carbon/human/body = allocate(/mob/living/carbon/human/consistent)
+		body.mind_initialize()
+		var/datum/antagonist/ert/role = allocate(role_type)
+		role.silent = TRUE
+		role.random_names = FALSE
+		role.forge_objectives_for_ert = FALSE
+		role.equip_ert = FALSE
+		body.mind.add_antag_datum(role)
+		var/datum/component/cyberpsychosis/load = body.GetComponent(/datum/component/cyberpsychosis)
+		var/expected_threshold = role_type == /datum/antagonist/ert/security ? 15 : 23
+		TEST_ASSERT_EQUAL(load.safe_load, expected_threshold, "Wrong tolerance for [role_type].")
+		body.mind.remove_antag_datum(role_type)
+		TEST_ASSERT_EQUAL(load.safe_load, expected_threshold, "Removing [role_type] changed the body's tolerance.")
+
+/// Officer equipment on spawn and through admin outfits prepares the body, including job variants.
+/datum/unit_test/cyberpsychosis_centcom_tolerance/Run()
+	var/mob/living/carbon/human/preview = allocate(/mob/living/carbon/human/consistent)
+	preview.equipOutfit(/datum/outfit/centcom/commander/field, visuals_only = TRUE)
+	var/datum/component/cyberpsychosis/preview_load = preview.GetComponent(/datum/component/cyberpsychosis)
+	TEST_ASSERT_EQUAL(preview_load.safe_load, 15, "An outfit preview changed the body's tolerance.")
+
+	for(var/outfit_type in list(/datum/outfit/centcom/commander/field, /datum/outfit/centcom/spec_ops, /datum/outfit/centcom/centcom_intern, /datum/outfit/centcom/ert/security))
+		var/mob/living/carbon/human/officer = allocate(/mob/living/carbon/human/consistent)
+		officer.equipOutfit(outfit_type)
+		var/datum/component/cyberpsychosis/load = officer.GetComponent(/datum/component/cyberpsychosis)
+		var/expected_threshold = outfit_type == /datum/outfit/centcom/ert/security ? 15 : 23
+		TEST_ASSERT_EQUAL(load.safe_load, expected_threshold, "Wrong tolerance after equipping [outfit_type].")
+
+	var/mob/living/carbon/human/junior = allocate(/mob/living/carbon/human/consistent)
+	junior.mind_initialize()
+	var/datum/job/donor/navy_junior_officer/job = SSjob.get_job_type(/datum/job/donor/navy_junior_officer)
+	junior.mind.set_assigned_role(job)
+	junior.equipOutfit(job.outfit)
+	job.after_spawn(junior)
+	var/datum/component/cyberpsychosis/junior_load = junior.GetComponent(/datum/component/cyberpsychosis)
+	TEST_ASSERT_EQUAL(junior_load.safe_load, 23, "The junior officer job did not prepare the body.")
+
+/// Click handlers can synchronously remove the effect before it restores temporary combat settings.
+/datum/unit_test/cyberpsychosis_attack_cleanup/Run()
+	var/mob/living/carbon/human/attacker = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
+	var/mob/living/carbon/human/target = allocate(/mob/living/carbon/human/consistent, get_step(run_loc_floor_bottom_left, NORTH))
+	var/datum/status_effect/forced_combat/cyberpsychosis/episode = attacker.apply_status_effect(/datum/status_effect/forced_combat/cyberpsychosis)
+	episode.target_ref = WEAKREF(target)
+	attacker.set_combat_mode(FALSE)
+	attacker.throw_mode = TRUE
+	attacker.next_move = 0
+	RegisterSignal(attacker, COMSIG_MOB_CLICKON, PROC_REF(end_episode_on_click))
+	episode.perform_attack()
+	TEST_ASSERT(QDELETED(episode), "The actual attack did not reach the click signal.")
+	TEST_ASSERT(!attacker.combat_mode && attacker.throw_mode, "Ending the episode during the attack left temporary combat settings active.")
+
+/datum/unit_test/cyberpsychosis_attack_cleanup/proc/end_episode_on_click(mob/living/source)
+	SIGNAL_HANDLER
+	source.remove_status_effect(/datum/status_effect/forced_combat/cyberpsychosis)
+	return COMSIG_MOB_CANCEL_CLICKON

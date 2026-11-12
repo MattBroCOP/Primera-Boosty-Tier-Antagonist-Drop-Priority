@@ -134,6 +134,8 @@
 		return
 
 	var/mob/living/carbon/human/operative = owner.current
+	var/datum/component/cyberpsychosis/cyberpsychosis = operative.GetComponent(/datum/component/cyberpsychosis)
+	cyberpsychosis?.grant_elite_tolerance()
 	ADD_TRAIT(operative, TRAIT_NOFEAR_HOLDUPS, INNATE_TRAIT)
 
 	if(!nukeop_outfit) // this variable is null in instances where an antagonist datum is granted via enslaving the mind (/datum/mind/proc/enslave_mind_to_creator), like in golems.

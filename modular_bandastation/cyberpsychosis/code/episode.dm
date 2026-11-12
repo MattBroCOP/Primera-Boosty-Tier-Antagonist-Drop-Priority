@@ -17,7 +17,7 @@
 	var/sound_channel
 	/// Remember the actual recipient so transferring to a ghost also stops the loop.
 	var/client/sound_listener
-	/// Timer for the next attack; independent of target selection frequency.
+	/// Timer for the next attack. Keep its handle during the callback, since ClickOn can sleep.
 	var/attack_timer
 	/// Time of the next involuntary laugh.
 	var/next_laugh = 0
@@ -52,7 +52,6 @@
 	RegisterSignal(owner, COMSIG_MOB_CLIENT_LOGIN, PROC_REF(on_login))
 	RegisterSignal(owner, COMSIG_LIVING_DEATH, PROC_REF(on_death))
 	INVOKE_ASYNC(src, PROC_REF(take_control))
-	attack_timer = addtimer(CALLBACK(src, PROC_REF(attack)), world.tick_lag, TIMER_STOPPABLE)
 	laugh()
 	return TRUE
 
@@ -158,6 +157,8 @@
 	if(target != target_ref?.resolve())
 		QDEL_NULL(pursuit)
 		target_ref = target ? WEAKREF(target) : null
+	if(target && !attack_timer && !IS_UNCONSCIOUS_OR_CRIT(owner))
+		schedule_attack()
 	if(target && QDELETED(pursuit))
 		pursuit = GLOB.move_manager.jps_move(owner, target, delay = owner.cached_multiplicative_slowdown, repath_delay = 1 SECONDS, max_path_length = 30, minimum_distance = 1, access = owner.get_access(), simulated_only = !HAS_TRAIT(owner, TRAIT_SPACEWALK), skip_first = TRUE, diagonal_handling = DIAGONAL_REMOVE_CLUNKY, extra_info = src)
 		if(pursuit)
@@ -166,27 +167,21 @@
 
 /// Keep a close target; beyond four tiles prefer a closer visible living target.
 /datum/status_effect/forced_combat/cyberpsychosis/proc/select_target()
-	var/list/mob/living/candidates = list()
+	var/mob/living/current = target_ref?.resolve()
+	var/mob/living/closest
+	var/closest_distance = INFINITY
 	for(var/mob/living/candidate in oview(7, owner))
-		if(!owner.in_fov(candidate))
-			continue
 		if(candidate.stat == DEAD || !isturf(candidate.loc) || candidate.invisibility > owner.see_invisible)
 			continue
-		if(failed_targets[REF(candidate)] > world.time)
+		if(failed_targets[REF(candidate)] > world.time || !owner.in_fov(candidate))
 			continue
-		candidates += candidate
-	var/mob/living/current = target_ref?.resolve()
-	if(!(current in candidates))
-		current = null
-	var/distance = current ? get_dist(owner, current) : INFINITY
-	if(distance < 4)
-		return current
-	for(var/mob/living/candidate as anything in candidates)
-		var/candidate_distance = get_dist(owner, candidate)
-		if(candidate_distance < distance)
-			current = candidate
-			distance = candidate_distance
-	return current
+		var/distance = get_dist(owner, candidate)
+		if(candidate == current && distance < 4)
+			return current
+		if(distance < closest_distance || (distance == closest_distance && candidate == current))
+			closest = candidate
+			closest_distance = distance
+	return closest
 
 /// Preserve normal mobility, grabs and restraints instead of force-moving the body.
 /datum/status_effect/forced_combat/cyberpsychosis/proc/before_move(datum/move_loop/source)
@@ -215,14 +210,20 @@
 
 /// Reuse forced_combat's held-item/unarmed ClickOn attack and its normal attack range.
 /datum/status_effect/forced_combat/cyberpsychosis/proc/attack()
-	attack_timer = null
 	if(QDELETED(owner) || owner.stat == DEAD || duration <= 0)
 		qdel(src)
 		return
-	if(uses_automatic_combat() && owner.next_move <= world.time && !IS_UNCONSCIOUS_OR_CRIT(owner))
+	if(!uses_automatic_combat() || !target_ref?.resolve() || IS_UNCONSCIOUS_OR_CRIT(owner))
+		attack_timer = null
+		return
+	if(owner.next_move <= world.time)
 		perform_attack()
 	if(!QDELETED(src))
-		attack_timer = addtimer(CALLBACK(src, PROC_REF(attack)), max(world.tick_lag, owner.next_move - world.time), TIMER_STOPPABLE)
+		schedule_attack()
+
+/// Wake at the body's click cooldown while there is a target to attack.
+/datum/status_effect/forced_combat/cyberpsychosis/proc/schedule_attack()
+	attack_timer = addtimer(CALLBACK(src, PROC_REF(attack)), max(world.tick_lag, owner.next_move - world.time), TIMER_STOPPABLE)
 
 /// A volunteer-controlled episode suspends automatic pursuit and attacks.
 /datum/status_effect/forced_combat/cyberpsychosis/proc/uses_automatic_combat()
@@ -230,13 +231,16 @@
 
 /// Select one target for the inherited EMP attack implementation.
 /datum/status_effect/forced_combat/cyberpsychosis/proc/perform_attack()
+	var/mob/living/attacker = owner
 	var/mob/living/target = target_ref?.resolve()
-	var/search_radius = isgun(owner.get_active_held_item()) ? 3 : 1
-	if(target && target.stat != DEAD && (target in oview(search_radius, owner)))
-		var/previous_throw_mode = owner.throw_mode
-		owner.throw_mode = FALSE
-		force_attack(target)
-		owner.throw_mode = previous_throw_mode
+	var/search_radius = isgun(attacker.get_active_held_item()) ? 3 : 1
+	if(!target || target.stat == DEAD || get_dist(attacker, target) > search_radius || !(target in oview(search_radius, attacker)))
+		return
+	var/previous_throw_mode = attacker.throw_mode
+	attacker.throw_mode = FALSE
+	force_attack(target)
+	if(!QDELETED(attacker))
+		attacker.throw_mode = previous_throw_mode
 
 /// Organic species use their normal laugh; IPCs get an audible involuntary laugh too.
 /datum/status_effect/forced_combat/cyberpsychosis/proc/laugh()

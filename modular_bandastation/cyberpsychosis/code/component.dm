@@ -9,7 +9,7 @@
 	/// One stoppable timer, only scheduled while alive, overloaded and outside an episode.
 	var/buildup_timer
 	/// Largest safe installed burden.
-	var/static/safe_load = 15
+	var/safe_load = 15
 	/// Interval between discrete buildup increments.
 	var/static/buildup_interval = 10 SECONDS
 
@@ -33,7 +33,14 @@
 	stop_timer()
 	return ..()
 
-/// Recompute only when the physical installation changes; rejected hardware still counts.
+/// Give this body the higher tolerance of an elite operative.
+/datum/component/cyberpsychosis/proc/grant_elite_tolerance()
+	if(safe_load >= 23)
+		return
+	safe_load = 23
+	update_load()
+
+/// Recompute installed burden; rejected hardware still counts.
 /datum/component/cyberpsychosis/proc/update_load()
 	SIGNAL_HANDLER
 	var/mob/living/carbon/human/human = parent

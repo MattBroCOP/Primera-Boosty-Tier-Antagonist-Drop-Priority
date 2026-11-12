@@ -29,6 +29,9 @@
 
 
 /datum/antagonist/ert/on_gain()
+	if(istype(src, /datum/antagonist/ert/official) || istype(src, /datum/antagonist/ert/deathsquad))
+		var/datum/component/cyberpsychosis/cyberpsychosis = owner.current?.GetComponent(/datum/component/cyberpsychosis)
+		cyberpsychosis?.grant_elite_tolerance()
 	if(random_names)
 		update_name()
 	if(forge_objectives_for_ert)
